@@ -1,0 +1,7 @@
+<resources>
+    <!-- ऐप का नाम जो स्क्रीन पर दिखेगा -->
+    <string name="app_name">WhatsApp VPN</string>
+    
+    <!-- पॉप-अप का टेक्स्ट -->
+    <string name="welcome_message">Welcome to this app and Thank you for using this app</string>
+</resources>
