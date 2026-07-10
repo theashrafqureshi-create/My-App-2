@@ -77,15 +77,6 @@ jobs:
                 <activity
                     android:name="com.v2ray.ang.ui.SettingsActivity"
                     android:exported="false" />
-                
-                <service
-                    android:name="com.v2ray.ang.service.RealVpnCore"
-                    android:permission="android.permission.BIND_VPN_SERVICE"
-                    android:exported="false">
-                    <intent-filter>
-                        <action android:name="android.net.VpnService" />
-                    </intent-filter>
-                </service>
             </application>
         </manifest>
         EOF
@@ -154,7 +145,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-        # activity_settings.xml [यहाँ 'format' को बदलकर 'version' कर दिया गया है ताकि एरर न आए]
+        # activity_settings.xml
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -481,100 +472,8 @@ jobs:
             }
         }
         EOF
-
-        # RealVpnCore.kt 
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
-        package com.v2ray.ang.service
         
-        import android.content.Intent
-        import android.net.VpnService
-        import android.os.ParcelFileDescriptor
-        import java.io.FileInputStream
-        import java.io.FileOutputStream
-        import java.nio.ByteBuffer
-        
-        class RealVpnCore : VpnService() {
-            private var vpnInterface: ParcelFileDescriptor? = null
-            private var isThreadRunning = false
-            private var packetProcessingThread: Thread? = null
-            
-            override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-                if (intent != null && "STOP_VPN" == intent.action) {
-                    stopVpnTunnel()
-                    return START_NOT_STICKY
-                }
-                
-                if (!isThreadRunning) {
-                    try {
-                        val builder = Builder()
-                            .setSession("WhatsAppSecureStream")
-                            .setMtu(1500) 
-                            .addAddress("127.0.0.1", 32) 
-                            .addDnsServer("1.1.1.1")
-                            .addDnsServer("8.8.8.8")
-                            .addRoute("0.0.0.0", 0)
-                        
-                        builder.addAllowedApplication("com.whatsapp")
-                        builder.addAllowedApplication("com.whatsapp.w4b")
-                        
-                        vpnInterface = builder.establish()
-                        isThreadRunning = true
-                        
-                        executeCoreDataBridge()
-                        
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                return START_STICKY
-            }
-            
-            private fun executeCoreDataBridge() {
-                packetProcessingThread = Thread {
-                    try {
-                        vpnInterface?.let { pfd ->
-                            protect(pfd.fd) 
-                            
-                            val fis = FileInputStream(pfd.fileDescriptor)
-                            val fos = FileOutputStream(pfd.fileDescriptor)
-                            val buffer = ByteBuffer.allocate(16384) 
-                            
-                            while (isThreadRunning) {
-                                val readBytes = fis.read(buffer.array())
-                                if (readBytes > 0) {
-                                    fos.write(buffer.array(), 0, readBytes)
-                                    fos.flush()
-                                    buffer.clear()
-                                }
-                                Thread.sleep(1)
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                packetProcessingThread?.start()
-            }
-            
-            private fun stopVpnTunnel() {
-                isThreadRunning = false
-                try {
-                    packetProcessingThread?.interrupt()
-                    packetProcessingThread = null
-                    vpnInterface?.close()
-                    vpnInterface = null
-                } catch (e: Exception) {}
-                stopSelf()
-            }
-            
-            override fun onDestroy() {
-                stopVpnTunnel()
-                super.onDestroy()
-            }
-        }
-        EOF
-        
-        # V2rayServiceManager.kt
+        # V2rayServiceManager.kt [ओरिजिनल कोर सर्विस इंजन हुक]
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/V2rayServiceManager.kt
         package com.v2ray.ang.service
         
@@ -584,24 +483,22 @@ jobs:
         object V2rayServiceManager {
             fun startV2rayServer(context: Context) {
                 try {
+                    // सीधे v2rayNG की असली VPN सर्विस को कॉल करना जिससे एंड्रॉइड चाबी का निशान तुरंत दे दे
                     val intentReal = Intent(context, Class.forName("com.v2ray.ang.service.VpnService"))
                     intentReal.putExtra("COMMAND", "START")
                     context.startService(intentReal)
-                } catch(ex: Exception) {}
-                
-                val intent = Intent(context, RealVpnCore::class.java)
-                context.startService(intent)
+                } catch(ex: Exception) {
+                    ex.printStackTrace()
+                }
             }
             fun stopV2rayServer(context: Context) {
                 try {
                     val intentReal = Intent(context, Class.forName("com.v2ray.ang.service.VpnService"))
                     intentReal.putExtra("COMMAND", "STOP")
                     context.startService(intentReal)
-                } catch(ex: Exception) {}
-                
-                val intent = Intent(context, RealVpnCore::class.java)
-                intent.action = "STOP_VPN"
-                context.startService(intent)
+                } catch(ex: Exception) {
+                    ex.printStackTrace()
+                }
             }
         }
         EOF
