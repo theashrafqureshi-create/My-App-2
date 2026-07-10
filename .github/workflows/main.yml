@@ -26,7 +26,6 @@ jobs:
 
     - name: Configure Repositories, Disable Minify and Inject Latest QR Scanner
       run: |
-        # 1. रिपॉजिटरी पाथ फिक्स करना
         if [ -f settings.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle
         fi
@@ -35,15 +34,12 @@ jobs:
         fi
 
         if [ -f app/build.gradle ]; then
-          # R8/Minify को पूरी तरह डिसेबल रखना
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
           
-          # पुराना MMKV आर्टीफेक्ट लिंक करना
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           
-          # [FIXED] कोट्लिन कोड के तालमेल के लिए बिल्कुल लेटेस्ट 4.3.0 वर्जन ही इंजेक्ट करना
           sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
@@ -159,7 +155,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-            # 2. सेटिंग्स स्क्रीन
+        # 2. सेटिंग्स स्क्रीन
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -282,7 +278,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-    - name: Inject Strict Permissions and Real QR Decoding Engine
+    - name: Inject Strict Permissions and Advanced Vmess Parsing Engine
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
         
@@ -291,21 +287,33 @@ jobs:
         package com.v2ray.ang.ui
 
         import android.content.Intent
+        import android.net.VpnService
         import android.os.Bundle
         import android.view.LayoutInflater
         import android.widget.Button
         import android.widget.ImageButton
         import android.widget.TextView
         import android.widget.Toast
+        import androidx.activity.result.contract.ActivityResultContracts
         import androidx.appcompat.app.AlertDialog
         import androidx.appcompat.app.AppCompatActivity
         import com.v2ray.ang.R
+        import com.v2ray.ang.service.V2rayServiceManager
+        import com.v2ray.ang.util.AngConfigManager
 
         class MainActivity : AppCompatActivity() {
             private var isConnected = false
             private lateinit var btnConnect: Button
             private lateinit var tvStatus: TextView
             private lateinit var btnSettings: ImageButton
+
+            private val vpnPermissionLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    startVpnCore()
+                } else {
+                    Toast.makeText(this, "VPN Permission Denied! Cannot connect.", Toast.LENGTH_SHORT).show()
+                }
+            }
 
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
@@ -327,20 +335,51 @@ jobs:
                         if (savedLink.isNullOrEmpty()) {
                             Toast.makeText(this, "No server link found! Open ⚙️ settings to paste link or scan QR.", Toast.LENGTH_LONG).show()
                         } else {
-                            isConnected = true
-                            tvStatus.text = "Connected (WhatsApp Only Mode)"
-                            tvStatus.setTextColor(android.graphics.Color.parseColor("#25D366"))
-                            btnConnect.text = "DISCONNECT"
+                            val intent = VpnService.prepare(this)
+                            if (intent != null) {
+                                vpnPermissionLauncher.launch(intent)
+                            } else {
+                                startVpnCore()
+                            }
                         }
                     } else {
-                        isConnected = false
-                        tvStatus.text = "Disconnected"
-                        tvStatus.setTextColor(android.graphics.Color.parseColor("#7F8C8D"))
-                        btnConnect.text = "CONNECT"
+                        stopVpnCore()
                     }
                 }
 
                 showWelcomeBanner()
+            }
+
+            private fun startVpnCore() {
+                try {
+                    val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
+                    val savedLink = sharedPreferences.getString("SERVER_LINK", "") ?: ""
+                    
+                    // [COMPATIBILITY LAYER] असली vmess लिंक को v2rayng के कॉन्फ़िगरेशन मैनेजर में इन्जेक्ट करना
+                    val mainStorage = AngConfigManager.importConfig(this, savedLink)
+                    if (mainStorage) {
+                        V2rayServiceManager.startV2rayServer(this)
+                        isConnected = true
+                        tvStatus.text = "Connected (WhatsApp Only Mode)"
+                        tvStatus.setTextColor(android.graphics.Color.parseColor("#25D366"))
+                        btnConnect.text = "DISCONNECT"
+                        Toast.makeText(this, "WhatsApp Bypass Tunnel Activated 🚀", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this, "Invalid Vmess format. Please re-scan.", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Engine start failed. Check config link.", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            private fun stopVpnCore() {
+                try {
+                    V2rayServiceManager.stopV2rayServer(this)
+                } catch (e: Exception) {}
+                isConnected = false
+                tvStatus.text = "Disconnected"
+                tvStatus.setTextColor(android.graphics.Color.parseColor("#7F8C8D"))
+                btnConnect.text = "CONNECT"
             }
 
             private fun showWelcomeBanner() {
@@ -447,6 +486,7 @@ jobs:
                 btnSaveLink.setOnClickListener {
                     val link = etVpnLink.text.toString().trim()
                     if (link.isNotEmpty()) {
+                        // [PER-APP SPLIT TUNNELING LOCK] सिर्फ व्हाट्सएप पर डेटा डायवर्ट करना
                         sharedPreferences.edit()
                             .putString("SERVER_LINK", link)
                             .putString("PROXY_APPS", "com.whatsapp,com.whatsapp.w4b")
