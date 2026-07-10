@@ -22,5 +22,14 @@ jobs:
       with:
         gradle-version: '8.2'
 
+    - name: Add JitPack Repository Automatically
+      run: |
+        if [ -f settings.gradle ]; then
+          sed -i "s/mavenCentral()/mavenCentral()\n        maven { url 'https:\/\/jitpack.io' }/g" settings.gradle
+        fi
+        if [ -f build.gradle ]; then
+          sed -i "s/mavenCentral()/mavenCentral()\n        maven { url 'https:\/\/jitpack.io' }/g" build.gradle
+        fi
+
     - name: Build with Gradle
-      run: gradle assembleDebug -Pandroid.repositoryUrl=https://jitpack.io
+      run: gradle assembleDebug
