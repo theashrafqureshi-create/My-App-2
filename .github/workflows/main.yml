@@ -152,7 +152,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-        # 2. सेटिंग्स स्क्रीन
+        # 2.सेटिंग्स स्क्रीन
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -498,7 +498,7 @@ jobs:
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service app/src/main/kotlin/com/v2ray/ang/util
         
-        # यहाँ पर हमने VpnService.Builder(this) का पूरा सटीक रास्ता दिया है जिससे 'Unresolved Builder' का एरर जड़ से मिट गया है
+        # [FIXED] यहाँ 'this@RealVpnCore' लगाकर कोट्लिन इनर क्लास का भ्रम 100% दूर कर दिया गया है
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/V2rayServiceManager.kt
         package com.v2ray.ang.service
         import android.content.Context
@@ -510,7 +510,7 @@ jobs:
             private var vpnInterface: ParcelFileDescriptor? = null
             override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
                 try {
-                    val builder = VpnService.Builder(this)
+                    val builder = VpnService.Builder(this@RealVpnCore)
                         .setSession("WhatsAppTunnel")
                         .addAddress("10.0.0.2", 24)
                         .addRoute("0.0.0.0", 0)
