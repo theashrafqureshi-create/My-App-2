@@ -22,27 +22,13 @@ jobs:
       with:
         gradle-version: '8.2'
 
-    - name: Force Repositories with JitPack
+    - name: Connect to Local MMKV
       run: |
-        cat << 'EOF' > settings.gradle
-        pluginManagement {
-            repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-            }
-        }
-        dependencyResolutionManagement {
-            repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-            repositories {
-                google()
-                mavenCentral()
-                maven { url 'https://jitpack.io' }
-            }
-        }
-        rootProject.name = "My-App-2"
-        include ':app'
-        EOF
+        # यह कमांड बैकग्राउंड में इंटरनेट वाले mmkv को आपके सीधे अपलोड किए हुए mmkv.aar से जोड़ देगा
+        if [ -f app/build.gradle ]; then
+          sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
+          sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
+        fi
 
     - name: Build with Gradle
       run: gradle assembleDebug
