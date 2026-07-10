@@ -3,13 +3,6 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
-// ग्रैडल को मजबूरन यहीं पर रास्ता दिखाने के लिए
-repositories {
-    google()
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
 android {
     namespace 'com.v2ray.ang'
     compileSdk 34
@@ -44,7 +37,7 @@ dependencies {
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     
-    // Core VPN Components (अब ग्रैडल को यह तुरंत मिल जाएगी)
+    // Core Components
     implementation 'com.github.tencent:mmkv:1.3.4'
     implementation 'io.reactivex.rxjava2:rxjava:2.2.21'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
