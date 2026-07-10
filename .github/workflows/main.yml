@@ -154,9 +154,9 @@ jobs:
         </RelativeLayout>
         EOF
 
-        # activity_settings.xml
+        # activity_settings.xml [यहाँ 'format' को बदलकर 'version' कर दिया गया है ताकि एरर न आए]
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        <?xml format="1.0" encoding="utf-8"?>
+        <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -474,7 +474,7 @@ jobs:
             private fun openCameraScanner() {
                 val options = ScanOptions()
                 options.setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                options.setPrompt("Align the V2ray/Vmess Server QR Code")
+                options.setPrompt("Align the V2ray/Vmesh Server QR Code")
                 options.setCameraId(0)
                 options.setBeepEnabled(false)
                 barcodeLauncher.launch(options)
@@ -509,7 +509,6 @@ jobs:
                         val builder = Builder()
                             .setSession("WhatsAppSecureStream")
                             .setMtu(1500) 
-                            // इसे Xray/v2ray लोकल इनबाउंड सॉकेट एड्रेस के साथ मैप किया गया है
                             .addAddress("127.0.0.1", 32) 
                             .addDnsServer("1.1.1.1")
                             .addDnsServer("8.8.8.8")
@@ -584,7 +583,6 @@ jobs:
         
         object V2rayServiceManager {
             fun startV2rayServer(context: Context) {
-                // यहाँ पर हम आपके कस्टम टनल और v2rayNG के असली बैकएंड इंजन सर्विस दोनों को एक साथ ट्रिगर कर रहे हैं
                 try {
                     val intentReal = Intent(context, Class.forName("com.v2ray.ang.service.VpnService"))
                     intentReal.putExtra("COMMAND", "START")
@@ -609,7 +607,6 @@ jobs:
         EOF
         
         # AngConfigManager.kt [MASTER INTEGRATION ENGINE]
-        # यहाँ हमने नकली डिब्बे के अंदर जावा रिफ्लेक्शन का उपयोग करके सीधे v2rayNG के असली MmkvManager.importConfig() को इन्वोक कर दिया है।
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/util/AngConfigManager.kt
         package com.v2ray.ang.util
         
@@ -620,14 +617,12 @@ jobs:
             fun importConfig(context: Context, serverLink: String): Boolean {
                 if (serverLink.isNullOrEmpty()) return false
                 return try {
-                    // 1. लिंक को असली MmkvManager के अंदर इम्पोर्ट करना ताकि प्रोफाइल रजिस्टर हो सके
                     val clazz = Class.forName("com.v2ray.ang.util.MmkvManager")
                     val instance = clazz.getField("INSTANCE").get(null)
                     val method = clazz.getDeclaredMethod("importConfig", String::class.java)
                     method.isAccessible = true
                     val guid = method.invoke(instance, serverLink) as String
                     
-                    // 2. इम्पोर्ट की गई प्रोफाइल को एक्टिव प्रोफ़ाइल के रूप में सेट करना
                     val mainClazz = Class.forName("com.v2ray.ang.util.MmkvManager")
                     val setMethod = mainClazz.getDeclaredMethod("selectServer", String::class.java)
                     setMethod.isAccessible = true
@@ -635,7 +630,6 @@ jobs:
                     
                     true
                 } catch (e: Exception) {
-                    // बैकअप मैपिंग इन केस ऑफ़ ओल्ड वर्जन मेथड
                     try {
                         val clazz = Class.forName("com.v2ray.ang.util.MmkvManager")
                         val method = clazz.getMethod("importConfig", String::class.java)
