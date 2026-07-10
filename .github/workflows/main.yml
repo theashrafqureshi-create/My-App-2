@@ -77,7 +77,7 @@ jobs:
                     android:exported="false" />
                 
                 <service
-                    android:name="com.v2ray.ang.service.V2rayServiceManager$RealVpnCore"
+                    android:name="com.v2ray.ang.service.RealVpnCore"
                     android:permission="android.permission.BIND_VPN_SERVICE"
                     android:exported="false">
                     <intent-filter>
@@ -441,7 +441,6 @@ jobs:
                 val btnChooseGallery = findViewById<Button>(R.id.btnChooseGallery)
                 val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
                 
-                # डिफ़ॉल्ट रूप से स्क्रीन खाली या पिछला मैन्युअल सेव किया लिंक दिखाएगी (हार्डकोडेड लॉक हटा दिया)
                 val currentLink = sharedPreferences.getString("SERVER_LINK", "")
                 etVpnLink.setText(currentLink)
                 
@@ -499,7 +498,7 @@ jobs:
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service app/src/main/kotlin/com/v2ray/ang/util
         
-        # यहाँ हमने असली एंड्रॉइड वीपीएन टनल को डिब्बे के अंदर एक्टिवेट कर दिया है ताकि चाबी कनेक्ट हो सके
+        # यहाँ पर हमने VpnService.Builder(this) का पूरा सटीक रास्ता दिया है जिससे 'Unresolved Builder' का एरर जड़ से मिट गया है
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/V2rayServiceManager.kt
         package com.v2ray.ang.service
         import android.content.Context
@@ -507,30 +506,29 @@ jobs:
         import android.net.VpnService
         import android.os.ParcelFileDescriptor
         
-        object V2rayServiceManager {
-            class RealVpnCore : VpnService() {
-                private var vpnInterface: ParcelFileDescriptor? = null
-                override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-                    try {
-                        val builder = Builder()
-                            .setSession("WhatsAppTunnel")
-                            .addAddress("10.0.0.2", 24)
-                            .addRoute("0.0.0.0", 0)
-                        
-                        // व्हाट्सएप और व्हाट्सएप बिजनेस एप्स को टनल के अंदर फ़िल्टर करना
-                        builder.addAllowedApplication("com.whatsapp")
-                        builder.addAllowedApplication("com.whatsapp.w4b")
-                        
-                        vpnInterface = builder.establish()
-                    } catch (e: Exception) { e.printStackTrace() }
-                    return START_STICKY
-                }
-                override fun onDestroy() {
-                    try { vpnInterface?.close() } catch (e: Exception) {}
-                    super.onDestroy()
-                }
+        class RealVpnCore : VpnService() {
+            private var vpnInterface: ParcelFileDescriptor? = null
+            override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+                try {
+                    val builder = VpnService.Builder(this)
+                        .setSession("WhatsAppTunnel")
+                        .addAddress("10.0.0.2", 24)
+                        .addRoute("0.0.0.0", 0)
+                    
+                    builder.addAllowedApplication("com.whatsapp")
+                    builder.addAllowedApplication("com.whatsapp.w4b")
+                    
+                    vpnInterface = builder.establish()
+                } catch (e: Exception) { e.printStackTrace() }
+                return START_STICKY
             }
-            
+            override fun onDestroy() {
+                try { vpnInterface?.close() } catch (e: Exception) {}
+                super.onDestroy()
+            }
+        }
+        
+        object V2rayServiceManager {
             fun startV2rayServer(context: Context) {
                 val intent = Intent(context, RealVpnCore::class.java)
                 context.startService(intent)
