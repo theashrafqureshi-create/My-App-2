@@ -29,65 +29,10 @@ jobs:
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
         fi
 
-    - name: Recreate Fresh App Codes Safely
+    - name: Restore Original Project Settings
       run: |
-        # 1. एक बिल्कुल साफ़-सुथरी यूआई स्क्रीन (Layout File) तैयार करना
-        mkdir -p app/src/main/res/layout
-        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#FFFFFF">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="App is Running Successfully!"
-                android:textColor="#000000"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_centerInParent="true"/>
-        </RelativeLayout>
-        EOF
-
-        # 2. आपकी MainActivity.kt को एक बिल्कुल शुद्ध और बिना एरर वाले कोट्लिन कोड से रिप्लेस करना
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/MainActivity.kt
-        package com.v2ray.ang.ui
-
-        import android.os.Bundle
-        import androidx.appcompat.app.AppCompatActivity
-
-        class MainActivity : AppCompatActivity() {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                setContentView(R.layout.activity_main)
-            }
-        }
-        EOF
-
-    - name: Fix AndroidManifest Automatically
-      run: |
-        mkdir -p app/src/main
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <application
-                android:allowBackup="true"
-                android:label="My App"
-                android:supportsRtl="true"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                <activity
-                    android:name="com.v2ray.ang.ui.MainActivity"
-                    android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
+        # यह कमांड आपके प्रोजेक्ट की पुरानी फाइलों को बिना छुए, ग्रैडल के रिसोर्स इंजन (R) को दोबारा री-लिंक कर देगा
+        gradle clean
 
     - name: Build with Gradle
       run: gradle assembleDebug
