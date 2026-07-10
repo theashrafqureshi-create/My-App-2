@@ -1,6 +1,0 @@
-# Gradle Wrapper Jar Base
-# This file serves as the binary placeholder for Gradle execution.
-# MODE: BINARY_WRAPPER
-# VERSION: 8.2
-
-[Base64 URL Placeholder / Required for GitHub Actions to trigger Gradle bootstrap initialization]
