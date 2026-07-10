@@ -24,24 +24,27 @@ jobs:
       with:
         gradle-version: '8.2'
 
-    - name: Configure Repositories and Inject QR Scanner Dependencies
+    - name: Configure Repositories, Disable Minify and Inject QR Scanner
       run: |
-        # रूट settings.gradle या build.gradle में mavenCentral और google रिपॉजिटरी सुनिश्चित करना
+        # 1. रिपॉजिटरी सुनिश्चित करना
         if [ -f settings.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle
         fi
-        
         if [ -f build.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' build.gradle
         fi
 
+        # 2. R8/Minify को बंद करना ताकि Missing Class एरर बिल्कुल न आए
         if [ -f app/build.gradle ]; then
-          # पुराना MMKV लिंक करना
+          sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
+          
+          # 3. पुराना MMKV लिंक करना
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           
-          # क्यूआर कोड स्कैनर इंजन की लाइब्रेरी इन्जेक्ट करना
-          sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
+          # 4. सबसे स्टेबल और कंपैटिबल क्यूआर स्कैनर लाइब्रेरी इन्जेक्ट करना
+          sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:3.6.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
     - name: Configure Manifest Safely
@@ -350,7 +353,7 @@ jobs:
         }
         EOF
 
-        # SettingsActivity.kt
+        # SettingsActivity.kt (कॉम्पैटिबल कस्टमाइज्ड इंजन)
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/SettingsActivity.kt
         package com.v2ray.ang.ui
 
