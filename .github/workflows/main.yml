@@ -23,4 +23,4 @@ jobs:
         gradle-version: '8.2'
 
     - name: Build with Gradle
-      run: gradle assembleDebug
+      run: gradle assembleDebug -Pandroid.repositoryUrl=https://jitpack.io
