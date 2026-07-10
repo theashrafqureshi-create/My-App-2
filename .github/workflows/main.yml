@@ -24,8 +24,9 @@ jobs:
       with:
         gradle-version: '8.2'
 
-    - name: Configure Repositories, Disable Minify and Inject QR Scanner
+    - name: Configure Repositories, Disable Minify and Inject Latest QR Scanner
       run: |
+        # 1. रिपॉजिटरी पाथ फिक्स करना
         if [ -f settings.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle
         fi
@@ -34,18 +35,19 @@ jobs:
         fi
 
         if [ -f app/build.gradle ]; then
+          # R8/Minify को पूरी तरह डिसेबल रखना
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
           
-          # पुराना MMKV लिंक करना
+          # पुराना MMKV आर्टीफेक्ट लिंक करना
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           
-          # स्टेबल स्कैनर लाइब्रेरी इन्जेक्ट करना
-          sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:3.6.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
+          # [FIXED] कोट्लिन कोड के तालमेल के लिए बिल्कुल लेटेस्ट 4.3.0 वर्जन ही इंजेक्ट करना
+          sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
-    - name: Configure Manifest Safely with Tools Replace
+    - name: Configure Manifest Safely with Manifest Merger Override
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -78,6 +80,7 @@ jobs:
                     android:name="com.journeyapps.barcodescanner.CaptureActivity"
                     android:screenOrientation="fullSensor"
                     tools:replace="android:screenOrientation,android:theme"
+                    tools:node="replace"
                     android:stateNotNeeded="true"
                     android:theme="@style/Theme.AppCompat.Light.NoActionBar"
                     android:windowSoftInputMode="stateAlwaysHidden"/>
@@ -156,7 +159,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-        # 2. सेटिंग्स स्क्रीन [FIXED XML TAG HERE]
+            # 2. सेटिंग्स स्क्रीन
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
