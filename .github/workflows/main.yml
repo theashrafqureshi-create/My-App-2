@@ -42,7 +42,7 @@ jobs:
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools">
+            xmlns:tools="http://schemas.annotation.com/tools">
             
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
@@ -93,7 +93,7 @@ jobs:
         mkdir -p app/src/main/res/layout
         
         # 1. मुख्य स्क्रीन
-        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        cat << 'EOF' > app/res/layout/activity_main.xml
         <?xml version="1.0" encoding="utf-8"?>
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
@@ -356,6 +356,19 @@ jobs:
                 btnConnect.text = "CONNECT"
                 Toast.makeText(this, "VPN Stopped Successfully", Toast.LENGTH_SHORT).show()
             }
+            
+            // [FIXED] मिसिंग वेलकम बैनर फ़ंक्शन वापस जोड़ दिया गया है
+            private fun showWelcomeBanner() {
+                try {
+                    val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_welcome, null)
+                    val alertDialog = AlertDialog.Builder(this).setView(dialogView).create()
+                    dialogView.findViewById<ImageButton>(R.id.btnCloseBanner).setOnClickListener {
+                        alertDialog.dismiss()
+                    }
+                    alertDialog.setCancelable(true)
+                    alertDialog.show()
+                } catch (e: Exception) {}
+            }
         }
         EOF
 
@@ -489,7 +502,6 @@ jobs:
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service app/src/main/kotlin/com/v2ray/ang/util
         
-        # [FIXED & OPTIMIZED] यहाँ इंटरनेट चलाने और स्टॉप करने का पूरा इंजन जोड़ दिया गया है
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -507,7 +519,6 @@ jobs:
                 }
                 
                 try {
-                    // इंटरनेट सुचारू रूप से चलाने के लिए सही DNS और रूटिंग कॉन्फिगरेशन
                     val builder = Builder()
                         .setSession("WhatsAppTunnel")
                         .addAddress("10.0.0.2", 24)
@@ -554,7 +565,7 @@ jobs:
             fun stopV2rayServer(context: Context) {
                 val intent = Intent(context, RealVpnCore::class.java)
                 intent.action = "STOP_VPN"
-                context.startService(intent) // एक्शन भेजकर सर्विस को बंद करने का सिग्नल
+                context.startService(intent)
             }
         }
         EOF
