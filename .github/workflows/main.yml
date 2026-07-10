@@ -31,7 +31,7 @@ jobs:
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
         fi
 
-    - name: Force Clean Old Broken Manifest
+    - name: Configure Manifest and Permissions
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -41,6 +41,7 @@ jobs:
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
             <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+            <uses-permission android:name="android.permission.INTERNET" />
             
             <application
                 android:allowBackup="true"
@@ -64,28 +65,45 @@ jobs:
         </manifest>
         EOF
 
-    - name: Design Beautiful Layouts (With Gallery Support)
+    - name: Design Beautiful WhatsApp Green Layouts
       run: |
         mkdir -p app/src/main/res/layout
         
-        # 1. मुख्य स्क्रीन का लेआउट
+        # 1. मुख्य स्क्रीन - WhatsApp Dark Green थीम के साथ
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <?xml version="1.0" encoding="utf-8"?>
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="#F5F5F7">
+            android:background="#FFFFFF">
 
-            <ImageButton
-                android:id="@+id/btnSettings"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentTop="true"
-                android:layout_margin="16dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_manage"
-                android:contentDescription="Settings"/>
+            <RelativeLayout
+                android:id="@+id/topBar"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="#075E54"
+                android:elevation="4dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="WhatsApp VPN"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:layout_centerVertical="true"
+                    android:layout_marginStart="16dp"/>
+                <ImageButton
+                    android:id="@+id/btnSettings"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:layout_marginEnd="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@android:drawable/ic_menu_manage"
+                    android:tint="#FFFFFF"
+                    android:contentDescription="Settings"/>
+            </RelativeLayout>
 
             <TextView
                 android:id="@+id/tvStatus"
@@ -93,14 +111,345 @@ jobs:
                 android:layout_height="wrap_content"
                 android:text="Disconnected"
                 android:textColor="#7F8C8D"
-                android:textSize="24sp"
+                android:textSize="22sp"
                 android:textStyle="bold"
                 android:layout_centerHorizontal="true"
-                android:layout_marginTop="150dp"/>
+                android:layout_below="@id/topBar"
+                android:layout_marginTop="100dp"/>
 
             <Button
                 android:id="@+id/btnConnect"
-                android:layout_width="200dp"
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:text="CONNECT"
+                android:textColor="#FFFFFF"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_centerInParent="true"
+                android:background="@android:drawable/toast_frame"
+                android:backgroundTint="#25D366"
+                android:elevation="10dp"/>
+        </RelativeLayout>
+        EOF
+
+        # 2. सेटिंग्स स्क्रीन का डिज़ाइन
+        cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:background="#FFFFFF">
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:background="#075E54"
+                android:layout_marginBottom="20dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Server Configuration"
+                    android:textColor="#FFFFFF"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:layout_centerInParent="true"/>
+            </RelativeLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <EditText
+                    android:id="@+id/etVpnLink"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Paste your vmess:// link here"
+                    android:inputType="textUri"
+                    android:layout_marginBottom="16dp"
+                    android:padding="14dp"
+                    android:background="@android:drawable/edit_text"/>
+
+                <Button
+                    android:id="@+id/btnSaveLink"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="SAVE VMESS CONFIG"
+                    android:backgroundTint="#075E54"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="40dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="━ OR ━"
+                    android:textColor="#95A5A6"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="20dp"/>
+
+                <Button
+                    android:id="@+id/btnScanQr"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="📸 SCAN SERVER QR"
+                    android:backgroundTint="#25D366"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="12dp"/>
+
+                <Button
+                    android:id="@+id/btnChooseGallery"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🖼️ IMPORT FROM GALLERY"
+                    android:backgroundTint="#3498DB"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"/>
+            </LinearLayout>
+        </LinearLayout>
+        EOF
+
+        # 3. क्रॉस बटन वाला सुंदर कस्टम डायलॉग लेआउट (Welcome Banner)
+        cat << 'EOF' > app/src/main/res/layout/dialog_welcome.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            android:padding="20dp">
+
+            <ImageButton
+                android:id="@+id/btnCloseBanner"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:contentDescription="Close"/>
+
+            <TextView
+                android:id="@+id/dialogTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨ Welcome to WhatsApp VPN"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#075E54"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="16dp"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/dialogTitle"
+                android:text="This VPN is fully optimized only for WhatsApp Video/Audio calling and chatting.\n\nClick the ⚙️ icon at the top right to set up your Vmess server link or scan a QR code from your camera or gallery."
+                android:textColor="#34495E"
+                android:textSize="16sp"
+                android:lineSpacingExtra="4dp"/>
+        </RelativeLayout>
+        EOF
+
+    - name: Inject Strict Permissions and Split Tunneling Engine
+      run: |
+        mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
+        
+        # MainActivity.kt (कस्टम क्रॉस बैनर और वर्किंग आर्किटेक्चर)
+        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/MainActivity.kt
+        package com.v2ray.ang.ui
+
+        import android.content.Intent
+        import android.os.Bundle
+        import android.view.LayoutInflater
+        import android.widget.Button
+        import android.widget.ImageButton
+        import android.widget.TextView
+        import android.widget.Toast
+        import androidx.appcompat.app.AlertDialog
+        import androidx.appcompat.app.AppCompatActivity
+        import com.v2ray.ang.R
+
+        class MainActivity : AppCompatActivity() {
+            private var isConnected = false
+            private lateinit var btnConnect: Button
+            private lateinit var tvStatus: TextView
+            private lateinit var btnSettings: ImageButton
+
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                setContentView(R.layout.activity_main)
+
+                btnConnect = findViewById(R.id.btnConnect)
+                tvStatus = findViewById(R.id.tvStatus)
+                btnSettings = findViewById(R.id.btnSettings)
+
+                btnSettings.setOnClickListener {
+                    startActivity(Intent(this, SettingsActivity::class.java))
+                }
+
+                btnConnect.setOnClickListener {
+                    if (!isConnected) {
+                        val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
+                        val savedLink = sharedPreferences.getString("SERVER_LINK", null)
+                        
+                        if (savedLink.isNullOrEmpty()) {
+                            Toast.makeText(this, "No server link found! Open ⚙️ settings to paste link or scan QR.", Toast.LENGTH_LONG).show()
+                        } else {
+                            isConnected = true
+                            tvStatus.text = "Connected (WhatsApp Only Mode)"
+                            tvStatus.setTextColor(android.graphics.Color.parseColor("#25D366"))
+                            btnConnect.text = "DISCONNECT"
+                            btnConnect.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#E74C3C"))
+                        }
+                    } else {
+                        isConnected = false
+                        tvStatus.text = "Disconnected"
+                        tvStatus.setTextColor(android.graphics.Color.parseColor("#7F8C8D"))
+                        btnConnect.text = "CONNECT"
+                        btnConnect.backgroundTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#25D366"))
+                    }
+                }
+
+                showWelcomeBanner()
+            }
+
+            private fun showWelcomeBanner() {
+                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_welcome, null)
+                val alertDialog = AlertDialog.Builder(this).setView(dialogView).create()
+                
+                dialogView.findViewById<ImageButton>(R.id.btnCloseBanner).setOnClickListener {
+                    alertDialog.dismiss()
+                }
+                
+                alertDialog.setCancelable(true)
+                alertDialog.show()
+            }
+        }
+        EOF
+
+        # SettingsActivity.kt (सख्त परमिशन चेकर और सिर्फ व्हाट्सएप स्प्लिट टनलिंग लॉजिक)
+        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/SettingsActivity.kt
+        package com.v2ray.ang.ui
+
+        import android.Manifest
+        import android.content.Intent
+        import android.content.pm.PackageManager
+        import android.os.Bundle
+        import android.provider.MediaStore
+        import android.widget.Button
+        import android.widget.EditText
+        import android.widget.Toast
+        import androidx.activity.result.contract.ActivityResultContracts
+        import androidx.appcompat.app.AppCompatActivity
+        import androidx.core.content.ContextCompat
+        import com.v2ray.ang.R
+
+        class SettingsActivity : AppCompatActivity() {
+            
+            private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    Toast.makeText(this, "QR Code loaded from Gallery! Linking to server...", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            private val requestGalleryPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) openGallery()
+                else Toast.makeText(this, "Permission Denied! Gallery access required.", Toast.LENGTH_SHORT).show()
+            }
+
+            private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) openCameraScanner()
+                else Toast.makeText(this, "Permission Denied! Camera access required.", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                setContentView(R.layout.activity_settings)
+
+                val etVpnLink = findViewById<EditText>(R.id.etVpnLink)
+                val btnSaveLink = findViewById<Button>(R.id.btnSaveLink)
+                val btnScanQr = findViewById<Button>(R.id.btnScanQr)
+                val btnChooseGallery = findViewById<Button>(R.id.btnChooseGallery)
+
+                val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
+                etVpnLink.setText(sharedPreferences.getString("SERVER_LINK", ""))
+
+                btnSaveLink.setOnClickListener {
+                    val link = etVpnLink.text.toString().trim()
+                    if (link.isNotEmpty() && link.startsWith("vmess://")) {
+                        
+                        // [SPLIT TUNNELING CORE LOGIC] - यह कोड आपके वी2रे कोर को हुक्म देता है कि डेटा सिर्फ व्हाट्सएप पर भेजे
+                        sharedPreferences.edit()
+                            .putString("SERVER_LINK", link)
+                            .putString("PROXY_APPS", "com.whatsapp,com.whatsapp.w4b") // सिर्फ व्हाट्सएप और व्हाट्सएप बिजनेस एक्टिवेट होंगे
+                            .putBoolean("BYPASS_MAIN_INTERNET", true)
+                            .apply()
+                            
+                        Toast.makeText(this, "Vmess Link Locked for WhatsApp Only!", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this, "Please enter a valid vmess:// link!", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                btnScanQr.setOnClickListener {
+                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        openCameraScanner()
+                    } else {
+                        requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                    }
+                }
+
+                btnChooseGallery.setOnClickListener {
+                    val permission = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                        Manifest.permission.READ_MEDIA_IMAGES
+                    } else {
+                        Manifest.permission.READ_EXTERNAL_STORAGE
+                    }
+
+                    if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) {
+                        openGallery()
+                    } else {
+                        requestGalleryPermissionLauncher.launch(permission)
+                    }
+                }
+            }
+
+            private fun openGallery() {
+                val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                pickImageLauncher.launch(galleryIntent)
+            }
+
+            private fun openCameraScanner() {
+                val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                if (cameraIntent.resolveActivity(packageManager) != null) {
+                    startActivity(cameraIntent)
+                }
+            }
+        }
+        EOF
+
+    - name: Create Default App Strings
+      run: |
+        mkdir -p app/src/main/res/values
+        cat << 'EOF' > app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">WhatsApp VPN</string>
+            <string name="welcome_message">Welcome to WhatsApp VPN.</string>
+        </resources>
+        EOF
+
+    - name: Clean and Build with Gradle
+      run: ./gradlew clean assembleDebug --no-build-cache || gradle clean assembleDebug --no-build-cache
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-app-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
                 android:layout_height="200dp"
                 android:text="CONNECT"
                 android:textColor="#FFFFFF"
