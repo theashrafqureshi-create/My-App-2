@@ -1,13 +1,3 @@
-        EOF
-
-    - name: Clean and Build with Gradle
-      run: ./gradlew clean assembleDebug --no-build-cache || gradle clean assembleDebug --no-build-cache
-
-    - name: Upload APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: my-app-apk
-        path: app/build/outputs/apk/debug/app-debug.apk
 name: Build APK
 on:
   push:
