@@ -42,9 +42,10 @@ jobs:
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           
-          # [FIXED] कोट्लिन कोड के तालमेल के लिए बिल्कुल लेटेस्ट 4.3.0 वर्जन ही इंजेक्ट करना
+          # कोट्लिन कोड के तालमेल के लिए बिल्कुल लेटेस्ट 4.3.0 वर्जन ही इंजेक्ट करना
           sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
+
     - name: Configure Manifest Safely with Manifest Merger Override
       run: |
         rm -f app/src/main/AndroidManifest.xml
@@ -87,6 +88,7 @@ jobs:
             </application>
         </manifest>
         EOF
+
     - name: Design Beautiful WhatsApp Green Layouts
       run: |
         mkdir -p app/src/main/res/layout
@@ -150,7 +152,8 @@ jobs:
                 android:elevation="10dp"/>
         </RelativeLayout>
         EOF
-            # 2. सेटिंग्स स्क्रीन
+
+        # 2. सेटिंग्स स्क्रीन
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
         <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -222,6 +225,7 @@ jobs:
             </LinearLayout>
         </LinearLayout>
         EOF
+
         # 3. वेलकम बैनर
         cat << 'EOF' > app/src/main/res/layout/dialog_welcome.xml
         <?xml version="1.0" encoding="utf-8"?>
@@ -261,6 +265,7 @@ jobs:
                 android:lineSpacingExtra="4dp"/>
         </RelativeLayout>
         EOF
+
     - name: Inject Strict Permissions and Real QR Decoding Engine
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
@@ -327,6 +332,7 @@ jobs:
             }
         }
         EOF
+
         # SettingsActivity.kt
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/SettingsActivity.kt
         package com.v2ray.ang.ui
@@ -411,7 +417,6 @@ jobs:
                             .putString("PROXY_APPS", "com.whatsapp,com.whatsapp.w4b")
                             .putBoolean("BYPASS_MAIN_INTERNET", true)
                             .apply()
-                            
                         Toast.makeText(this, "Vmess Config Saved for WhatsApp!", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
@@ -453,17 +458,12 @@ jobs:
             }
         }
         EOF
-    - name: Create Default App Strings
-      run: |
-        mkdir -p app/src/main/res/values
-        cat << 'EOF' > app/src/main/res/values/strings.xml
-        <resources>
-            <string name="app_name">WhatsApp VPN</string>
-            <string name="welcome_message">Welcome to WhatsApp VPN.</string>
-        </resources>
-        EOF
+
     - name: Clean and Build with Gradle
-      run: ./gradlew clean assembleDebug --no-build-cache || gradle clean assembleDebug --no-build-cache
+      run: |
+        chmod +x gradlew
+        ./gradlew clean --refresh-dependencies
+        ./gradlew assembleDebug --no-build-cache
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
