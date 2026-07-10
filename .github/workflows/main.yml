@@ -1,4 +1,4 @@
-name: Rebuild WhatsApp VPN - Permission Fix
+name: Rebuild WhatsApp VPN - Core Fix
 on:
   push:
     branches: [ "main" ]
@@ -18,6 +18,30 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+
+    - name: Fix Directory Structure and Local MMKV Link
+      run: |
+        # 1. libs फोल्डर बनाना और mmkv.aar को सही जगह सेट करना
+        mkdir -p app/libs
+        if [ -f app/mmkv.aar ]; then
+          mv app/mmkv.aar app/libs/
+        fi
+        
+        # 2. ग्रैडल रिपॉजिटरी को अपडेट करना
+        sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle || true
+        
+        # 3. build.gradle के अंदर से ऑनलाइन mmkv डिपेंडेंसी को हटाकर लोकल पाथ सेट करना
+        if [ -f app/build.gradle ]; then
+          sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
+          sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
+          
+          # ऑनलाइन डिपेंडेंसी की लाइनों को साफ़ करना ताकि एरर न आए
+          sed -i '/com.github.tencent:mmkv/d' app/build.gradle
+          sed -i '/com.tencent:mmkv/d' app/build.gradle
+          
+          # हमारी लोकल mmkv.aar फ़ाइल को ग्रैडल इंजन के साथ जोड़ना
+          sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")\n    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
+        fi
 
     - name: Fix Manifest for Foreground Service
       run: |
@@ -76,7 +100,7 @@ jobs:
         class SettingsActivity : AppCompatActivity() {
             private lateinit var etVpnLink: EditText
             private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) { /* QR logic ... */ Toast.makeText(this, "Selected!", Toast.LENGTH_SHORT).show() }
+                if (result.resultCode == RESULT_OK) { Toast.makeText(this, "Selected!", Toast.LENGTH_SHORT).show() }
             }
             private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) openGallery() else Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
@@ -132,3 +156,9 @@ jobs:
 
     - name: Build APK
       run: gradle assembleDebug --no-build-cache
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-app-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
