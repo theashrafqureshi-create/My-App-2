@@ -22,23 +22,20 @@ jobs:
       with:
         gradle-version: '8.2'
 
-    - name: Inject JitPack into Settings and App
+    - name: Force JitPack Repository
       run: |
-        # 1. अगर settings.gradle मौजूद है, तो उसके अंदर सुरक्षा मोड को बदलें और JitPack जोड़ें
-        if [ -f settings.gradle ]; then
-          sed -i 's/FAIL_ON_PROJECT_REPOS/PREFER_PROJECT/g' settings.gradle
-          sed -i "s/mavenCentral()/mavenCentral()\n        maven { url 'https:\/\/jitpack.io' }/g" settings.gradle
-        fi
-        
-        # 2. ऐप के मुख्य build.gradle के अंदर भी JitPack का पता जोड़ें
-        if [ -f build.gradle ]; then
-          sed -i "s/mavenCentral()/mavenCentral()\n        maven { url 'https:\/\/jitpack.io' }/g" build.gradle
-        fi
-        
-        # 3. app फोल्डर के अंदर वाले build.gradle में भी बैकअप के लिए जोड़ें
-        if [ -f app/build.gradle ]; then
-          sed -i "s/mavenCentral()/mavenCentral()\n        maven { url 'https:\/\/jitpack.io' }/g" app/build.gradle
-        fi
+        cat << 'EOF' > settings.gradle
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+            repositories {
+                google()
+                mavenCentral()
+                maven { url 'https://jitpack.io' }
+            }
+        }
+        rootProject.name = "My-App-2"
+        include ':app'
+        EOF
 
     - name: Build with Gradle
       run: gradle assembleDebug
