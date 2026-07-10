@@ -31,19 +31,20 @@ jobs:
 
     - name: Fix AndroidManifest Automatically
       run: |
-        # यह कमांड कोट्लिन के स्टैंडर्ड फॉर्मेट के हिसाब से मैनिफेस्ट को पूरी तरह री-राइट कर देगा
+        # यहाँ हमने आपके प्रोजेक्ट का असली रास्ता 'com.v2ray.ang.ui.MainActivity' सेट कर दिया है
         mkdir -p app/src/main
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            package="com.example.myapp"> <application
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            
+            <application
                 android:allowBackup="true"
                 android:label="My App"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 
                 <activity
-                    android:name=".MainActivity"
+                    android:name="com.v2ray.ang.ui.MainActivity"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
