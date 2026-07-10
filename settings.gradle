@@ -10,6 +10,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // mmkv लाइब्रेरी ढूंढने के लिए यह दुकान ज़रूरी है
         maven { url 'https://jitpack.io' }
     }
 }
