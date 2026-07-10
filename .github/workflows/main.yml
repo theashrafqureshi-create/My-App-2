@@ -500,7 +500,7 @@ jobs:
         }
         EOF
 
-        # RealVpnCore.kt
+        # RealVpnCore.kt [FIXED SYSTEM NOTIFICATION ICON REFERENCE]
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -532,10 +532,11 @@ jobs:
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             val channel = NotificationChannel("vpn_pro_channel", "WhatsApp Active Bridge", NotificationManager.IMPORTANCE_LOW)
                             getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+                            // [FIXED] यहाँ ic_dialog_info का इस्तेमाल किया गया है जो हर एंड्रॉइड ओएस में उपलब्ध है
                             val notification = NotificationCompat.Builder(this, "vpn_pro_channel")
                                 .setContentTitle("WhatsApp Secure Bridge Running")
                                 .setContentText("Encrypted proxy stream is active.")
-                                .setSmallIcon(android.R.drawable.stat_sys_vpn_config)
+                                .setSmallIcon(android.R.drawable.ic_dialog_info)
                                 .setOngoing(true)
                                 .build()
                             startForeground(1, notification)
