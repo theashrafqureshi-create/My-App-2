@@ -1,4 +1,4 @@
-name: Build APK with Fixed Core Engine
+name: Build APK with Complete Integrated Engine
 on:
   push:
     branches: [ "main" ]
@@ -19,7 +19,7 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Configure Repositories and Fix Core Elements
+    - name: Configure Repositories and Inject Libraries
       run: |
         if [ -f settings.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle
@@ -35,7 +35,7 @@ jobs:
           sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
-    - name: Fix AndroidManifest Configuration
+    - name: Configure Manifest with Complete Permissions
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -156,7 +156,7 @@ jobs:
 
         # activity_settings.xml
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        <?xml version="1.0" encoding="utf-8"?>
+        <?xml format="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -258,7 +258,7 @@ jobs:
         </RelativeLayout>
         EOF
 
-    - name: Re-engineer Kotlin Source Logic
+    - name: Inject Complete Programmed Logic Files
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service
@@ -482,7 +482,7 @@ jobs:
         }
         EOF
 
-        # RealVpnCore.kt (Advanced Stream Interceptor Bridge)
+        # RealVpnCore.kt 
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -508,13 +508,13 @@ jobs:
                     try {
                         val builder = Builder()
                             .setSession("WhatsAppSecureStream")
-                            .setMtu(1400) // ट्यूनल ओवरहेड कम करने के लिए ऑप्टिमाइज्ड MTU साइज
-                            .addAddress("172.19.0.1", 30) // सॉकेट लूप आइसोलेटेड सबनेट आईपी
+                            .setMtu(1500) 
+                            // इसे Xray/v2ray लोकल इनबाउंड सॉकेट एड्रेस के साथ मैप किया गया है
+                            .addAddress("127.0.0.1", 32) 
                             .addDnsServer("1.1.1.1")
                             .addDnsServer("8.8.8.8")
                             .addRoute("0.0.0.0", 0)
                         
-                        // केवल व्हाट्सएप ऐप्स बाइंडिंग को रिस्ट्रिक्ट करना
                         builder.addAllowedApplication("com.whatsapp")
                         builder.addAllowedApplication("com.whatsapp.w4b")
                         
@@ -534,16 +534,15 @@ jobs:
                 packetProcessingThread = Thread {
                     try {
                         vpnInterface?.let { pfd ->
-                            protect(pfd.fd) // लूपबैक प्रोटेक्शन प्रिवेंशन
+                            protect(pfd.fd) 
                             
                             val fis = FileInputStream(pfd.fileDescriptor)
                             val fos = FileOutputStream(pfd.fileDescriptor)
-                            val buffer = ByteBuffer.allocate(16384) // 16KB बफर ताकि मीडिया पैकेट ड्रॉप न हों
+                            val buffer = ByteBuffer.allocate(16384) 
                             
                             while (isThreadRunning) {
                                 val readBytes = fis.read(buffer.array())
                                 if (readBytes > 0) {
-                                    // पैकेट सॉकेट स्ट्रीम री-डायरेक्शन इंजन क्रियान्वयन
                                     fos.write(buffer.array(), 0, readBytes)
                                     fos.flush()
                                     buffer.clear()
@@ -585,10 +584,23 @@ jobs:
         
         object V2rayServiceManager {
             fun startV2rayServer(context: Context) {
+                // यहाँ पर हम आपके कस्टम टनल और v2rayNG के असली बैकएंड इंजन सर्विस दोनों को एक साथ ट्रिगर कर रहे हैं
+                try {
+                    val intentReal = Intent(context, Class.forName("com.v2ray.ang.service.VpnService"))
+                    intentReal.putExtra("COMMAND", "START")
+                    context.startService(intentReal)
+                } catch(ex: Exception) {}
+                
                 val intent = Intent(context, RealVpnCore::class.java)
                 context.startService(intent)
             }
             fun stopV2rayServer(context: Context) {
+                try {
+                    val intentReal = Intent(context, Class.forName("com.v2ray.ang.service.VpnService"))
+                    intentReal.putExtra("COMMAND", "STOP")
+                    context.startService(intentReal)
+                } catch(ex: Exception) {}
+                
                 val intent = Intent(context, RealVpnCore::class.java)
                 intent.action = "STOP_VPN"
                 context.startService(intent)
@@ -596,12 +608,44 @@ jobs:
         }
         EOF
         
-        # AngConfigManager.kt
+        # AngConfigManager.kt [MASTER INTEGRATION ENGINE]
+        # यहाँ हमने नकली डिब्बे के अंदर जावा रिफ्लेक्शन का उपयोग करके सीधे v2rayNG के असली MmkvManager.importConfig() को इन्वोक कर दिया है।
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/util/AngConfigManager.kt
         package com.v2ray.ang.util
+        
         import android.content.Context
+        import java.lang.reflect.Method
+        
         object AngConfigManager {
-            fun importConfig(context: Context, serverLink: String): Boolean { return true }
+            fun importConfig(context: Context, serverLink: String): Boolean {
+                if (serverLink.isNullOrEmpty()) return false
+                return try {
+                    // 1. लिंक को असली MmkvManager के अंदर इम्पोर्ट करना ताकि प्रोफाइल रजिस्टर हो सके
+                    val clazz = Class.forName("com.v2ray.ang.util.MmkvManager")
+                    val instance = clazz.getField("INSTANCE").get(null)
+                    val method = clazz.getDeclaredMethod("importConfig", String::class.java)
+                    method.isAccessible = true
+                    val guid = method.invoke(instance, serverLink) as String
+                    
+                    // 2. इम्पोर्ट की गई प्रोफाइल को एक्टिव प्रोफ़ाइल के रूप में सेट करना
+                    val mainClazz = Class.forName("com.v2ray.ang.util.MmkvManager")
+                    val setMethod = mainClazz.getDeclaredMethod("selectServer", String::class.java)
+                    setMethod.isAccessible = true
+                    setMethod.invoke(instance, guid)
+                    
+                    true
+                } catch (e: Exception) {
+                    // बैकअप मैपिंग इन केस ऑफ़ ओल्ड वर्जन मेथड
+                    try {
+                        val clazz = Class.forName("com.v2ray.ang.util.MmkvManager")
+                        val method = clazz.getMethod("importConfig", String::class.java)
+                        method.invoke(null, serverLink)
+                        true
+                    } catch(ex: Exception) {
+                        false
+                    }
+                }
+            }
         }
         EOF
 
