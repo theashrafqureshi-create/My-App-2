@@ -548,8 +548,8 @@ jobs:
         </resources>
         EOF
 
-            - name: Clean and Build with Gradle
-      run: |
+        - name: Clean and Build with Gradle
+        run: |
         chmod +x gradlew
         ./gradlew clean --refresh-dependencies
         ./gradlew assembleDebug --no-build-cache
