@@ -29,9 +29,9 @@ jobs:
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
         fi
 
-    - name: Inject Valid MainActivity and Layout Codes
+    - name: Create App Layout Window
       run: |
-        # 1. ऐप के लिए एक बिल्कुल असली और वर्किंग लेआउट स्क्रीन (UI File) बनाना
+        # यहाँ हम सिर्फ एक साफ़-सुथरी स्क्रीन लेआउट फ़ाइल बना रहे हैं जो आपकी ओरिजिनल फ़ाइल को चाहिए होगी
         mkdir -p app/src/main/res/layout
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <?xml version="1.0" encoding="utf-8"?>
@@ -47,22 +47,6 @@ jobs:
                 android:textSize="20sp"
                 android:layout_centerInParent="true"/>
         </RelativeLayout>
-        EOF
-
-        # 2. आपकी MainActivity.kt के अंदर का असली कोट्लिन कोड री-राइट करना जो स्क्रीन को रोक कर रखेगा
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/MainActivity.kt
-        package com.v2ray.ang.ui
-
-        import android:os.Bundle
-        import androidx.appcompat.app.AppCompatActivity
-
-        class MainActivity : AppCompatActivity() {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                setContentView(R.layout.activity_main)
-            }
-        }
         EOF
 
     - name: Fix AndroidManifest Automatically
