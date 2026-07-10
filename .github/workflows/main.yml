@@ -27,15 +27,12 @@ jobs:
     - name: Inject QR Scanner Dependencies and Connect MMKV
       run: |
         if [ -f app/build.gradle ]; then
-          # पुराना MMKV लिंक करना
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
-          
-          # असली क्यूआर कोड स्कैनर इंजन की लाइब्रेरी इन्जेक्ट करना
           sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
-    - name: Configure Manifest and Permissions
+    - name: Configure Manifest Safely
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -65,8 +62,6 @@ jobs:
                 <activity
                     android:name="com.journeyapps.barcodescanner.CaptureActivity"
                     android:screenOrientation="fullSensor"
-                    android:tools:replace="screenOrientation"
-                    xmlns:tools="http://schemas.android.com/tools"
                     android:stateNotNeeded="true"
                     android:theme="@style/Theme.AppCompat.Light.NoActionBar"
                     android:windowSoftInputMode="stateAlwaysHidden"/>
@@ -225,52 +220,47 @@ jobs:
         </LinearLayout>
         EOF
 
-        # 3. [FIXED] सही लेआउट वाला वेलकम बैनर (क्रॉस बटन कोने में सेट कर दिया है)
+        # 3. [FIXED] वेलकम बैनर (क्रॉस बटन को बिल्कुल दाहिने कोने में परफेक्ट अलाइन कर दिया है)
         cat << 'EOF' > app/src/main/res/layout/dialog_welcome.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:background="#FFFFFF"
             android:padding="20dp">
 
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
-                
-                <TextView
-                    android:id="@+id/dialogTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="✨ Welcome to WhatsApp VPN"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:textColor="#075E54"
-                    android:layout_alignParentStart="true"
-                    android:layout_centerVertical="true"
-                    android:layout_toStartOf="@id/btnCloseBanner"/>
+            <ImageButton
+                android:id="@+id/btnCloseBanner"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentEnd="true"
+                android:layout_alignParentTop="true"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:contentDescription="Close"/>
 
-                <ImageButton
-                    android:id="@+id/btnCloseBanner"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_close_clear_cancel"
-                    android:contentDescription="Close"/>
-            </RelativeLayout>
+            <TextView
+                android:id="@+id/dialogTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✨ Welcome to WhatsApp VPN"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#075E54"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/btnCloseBanner"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"/>
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_below="@id/dialogTitle"
                 android:text="This VPN is fully optimized only for WhatsApp Video/Audio calling and chatting.\n\nClick the ⚙️ icon at the top right to set up your Vmess server link or scan a QR code from your camera or gallery."
                 android:textColor="#34495E"
                 android:textSize="15sp"
                 android:lineSpacingExtra="4dp"/>
-        </LinearLayout>
+        </RelativeLayout>
         EOF
 
     - name: Inject Strict Permissions and Real QR Decoding Engine
@@ -348,7 +338,7 @@ jobs:
         }
         EOF
 
-        # SettingsActivity.kt (असली लाइव स्कैनर और गैलरी QR एक्सट्रैक्टर इंजन के साथ)
+        # SettingsActivity.kt
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/SettingsActivity.kt
         package com.v2ray.ang.ui
 
@@ -376,18 +366,15 @@ jobs:
 
             private lateinit var etVpnLink: EditText
 
-            // 1. लाइव कैमरा स्कैनर का असली रिजल्ट रिस्पॉन्स
             private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
                 if (result.contents != null) {
-                    val qrText = result.contents
-                    etVpnLink.setText(qrText)
-                    Toast.makeText(this, "QR Code Scanned & Auto-Pasted Successfully!", Toast.LENGTH_LONG).show()
+                    etVpnLink.setText(result.contents)
+                    Toast.makeText(this, "QR Code Scanned & Auto-Pasted!", Toast.LENGTH_LONG).show()
                 } else {
                     Toast.makeText(this, "Scanning Cancelled", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            // 2. गैलरी से सिलेक्ट की हुई इमेज को डीकोड करने का असली इंजन
             private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == RESULT_OK) {
                     val imageUri = result.data?.data
@@ -407,11 +394,10 @@ jobs:
                             val reader: Reader = MultiFormatReader()
                             val decodingResult = reader.decode(binaryBitmap)
                             
-                            // क्यूआर कोड का टेक्स्ट निकाल कर एडिट टेक्स्ट में डालना
                             etVpnLink.setText(decodingResult.text)
-                            Toast.makeText(this, "Gallery QR Decoded & Auto-Pasted Successfully!", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Gallery QR Decoded & Auto-Pasted!", Toast.LENGTH_LONG).show()
                         } catch (e: Exception) {
-                            Toast.makeText(this, "Failed to read QR from this image. Please try a clearer screenshot.", Toast.LENGTH_LONG).show()
+                            Toast.makeText(this, "Failed to read QR. Please ensure it is a valid server QR config.", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -419,12 +405,12 @@ jobs:
 
             private val requestGalleryPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) openGallery()
-                else Toast.makeText(this, "Permission Denied! Gallery access required.", Toast.LENGTH_SHORT).show()
+                else Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show()
             }
 
             private val requestCameraPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
                 if (isGranted) openCameraScanner()
-                else Toast.makeText(this, "Permission Denied! Camera access required.", Toast.LENGTH_SHORT).show()
+                else Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show()
             }
 
             override fun onCreate(savedInstanceState: Bundle?) {
