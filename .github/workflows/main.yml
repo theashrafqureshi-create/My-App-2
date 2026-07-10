@@ -17,6 +17,10 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    # आपके भेजे गए पेज के नियम के अनुसार (Add to an existing Workflow)
+    - name: Validate Gradle Wrapper
+      uses: gradle/actions/wrapper-validation@v4
+
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
       with:
@@ -24,4 +28,3 @@ jobs:
 
     - name: Build with Gradle
       run: gradle assembleDebug
-      
