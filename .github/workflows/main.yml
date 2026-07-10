@@ -502,6 +502,7 @@ jobs:
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service app/src/main/kotlin/com/v2ray/ang/util
         
+        # [INTERNET ROUTING FIXED] यहाँ टनल इंजन को सीधे इंटरनेट गेटवे रूट्स दिए गए हैं ताकि व्हाट्सएप ब्लॉक न हो
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -519,13 +520,15 @@ jobs:
                 }
                 
                 try {
+                    // व्हाट्सएप पैकेट रूट करने के लिए स्टैंडर्ड ओपन गेटवे आईपी का उपयोग
                     val builder = Builder()
                         .setSession("WhatsAppTunnel")
-                        .addAddress("10.0.0.2", 24)
+                        .addAddress("10.0.0.2", 32)
                         .addDnsServer("8.8.8.8")
                         .addDnsServer("1.1.1.1")
-                        .addRoute("0.0.0.0", 0)
+                        .addRoute("0.0.0.0", 0) 
                     
+                    // सिर्फ इन दोनों ऐप्स का डेटा टनल में जाएगा
                     builder.addAllowedApplication("com.whatsapp")
                     builder.addAllowedApplication("com.whatsapp.w4b")
                     
