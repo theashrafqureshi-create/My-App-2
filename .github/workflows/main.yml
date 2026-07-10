@@ -10,6 +10,8 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        clean: true # यह कमांड गिटहब के कंप्यूटर को पूरी तरह साफ़ कर देगा
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -29,13 +31,9 @@ jobs:
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
         fi
 
-    - name: Restore Original Project Settings
-      run: |
-        # यह कमांड आपके प्रोजेक्ट की पुरानी फाइलों को बिना छुए, ग्रैडल के रिसोर्स इंजन (R) को दोबारा री-लिंक कर देगा
-        gradle clean
-
-    - name: Build with Gradle
-      run: gradle assembleDebug
+    - name: Clean and Build with Gradle
+      # --no-build-cache लगाने से ग्रैडल पुराना खराब पुराना डेटा भूलकर एकदम नया ताज़ा एपीके बनाएगा
+      run: ./gradlew clean assembleDebug --no-build-cache || gradle clean assembleDebug --no-build-cache
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
