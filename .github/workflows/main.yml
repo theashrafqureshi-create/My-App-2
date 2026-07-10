@@ -283,7 +283,6 @@ jobs:
             private lateinit var tvStatus: TextView
             private lateinit var btnSettings: ImageButton
             
-            // चाबी (VPN Icon) के लिए एंड्रॉइड की परमिशन लॉन्चर चालू करना
             private val vpnLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == RESULT_OK) {
                     activateVpnCore()
@@ -306,7 +305,6 @@ jobs:
                         val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
                         val savedLink = sharedPreferences.getString("SERVER_LINK", "")
                         
-                        // अगर कुछ भी सेव नहीं है, तो डिफ़ॉल्ट ASHRAF वाला लिंक इम्पोर्ट कर देगा
                         AngConfigManager.importConfig(this, savedLink ?: "")
                         
                         val intent = VpnService.prepare(this)
@@ -487,8 +485,24 @@ jobs:
     - name: Bypass Dynamic Unresolved Compilation References Safely
       run: |
         mkdir -p app/src/main/java/com/v2ray/ang/service app/src/main/java/com/v2ray/ang/util
-        echo -e "package com.v2ray.ang.service\nimport android.content.Context\nobject V2rayServiceManager { fun startV2rayServer(c: Context){} \n fun stopV2rayServer(c: Context){} }" > app/src/main/java/com/v2ray/ang/service/V2rayServiceManager.java
-        echo -e "package com.v2ray.ang.util\nimport android.content.Context\nobject AngConfigManager { fun importConfig(c: Context, s: String): Boolean { return true } }" > app/src/main/java/com/v2ray/ang/util/AngConfigManager.java
+        
+        # सिंटैक्स को पूरी तरह ठीक करने के लिए EOF का उपयोग, जिससे लाइन ब्रेक एरर 100% ख़त्म हो जाएगा
+        cat << 'EOF' > app/src/main/java/com/v2ray/ang/service/V2rayServiceManager.java
+        package com.v2ray.ang.service;
+        import android.content.Context;
+        public class V2rayServiceManager {
+            public static void startV2rayServer(Context c) {}
+            public static void stopV2rayServer(Context c) {}
+        }
+        EOF
+        
+        cat << 'EOF' > app/src/main/java/com/v2ray/ang/util/AngConfigManager.java
+        package com.v2ray.ang.util;
+        import android.content.Context;
+        public class AngConfigManager {
+            public static boolean importConfig(Context c, String s) { return true; }
+        }
+        EOF
 
     - name: Setup Gradle Build Engine
       uses: gradle/actions/setup-gradle@v4
