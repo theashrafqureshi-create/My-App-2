@@ -354,16 +354,7 @@ jobs:
                 tvStatus.text = "Disconnected"
                 tvStatus.setTextColor(android.graphics.Color.parseColor("#7F8C8D"))
                 btnConnect.text = "CONNECT"
-            }
-            
-            private fun showWelcomeBanner() {
-                val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_welcome, null)
-                val alertDialog = AlertDialog.Builder(this).setView(dialogView).create()
-                dialogView.findViewById<ImageButton>(R.id.btnCloseBanner).setOnClickListener {
-                    alertDialog.dismiss()
-                }
-                alertDialog.setCancelable(true)
-                alertDialog.show()
+                Toast.makeText(this, "VPN Stopped Successfully", Toast.LENGTH_SHORT).show()
             }
         }
         EOF
@@ -498,7 +489,7 @@ jobs:
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/service app/src/main/kotlin/com/v2ray/ang/util
         
-        # [FIXED LEVEL] RealVpnCore को पूरी तरह इंडिपेंडेंट क्लास बनाकर इनर क्लास का एरर खत्म किया
+        # [FIXED & OPTIMIZED] यहाँ इंटरनेट चलाने और स्टॉप करने का पूरा इंजन जोड़ दिया गया है
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -510,10 +501,18 @@ jobs:
             private var vpnInterface: ParcelFileDescriptor? = null
             
             override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+                if (intent != null && "STOP_VPN" == intent.action) {
+                    stopVpnTunnel()
+                    return START_NOT_STICKY
+                }
+                
                 try {
+                    // इंटरनेट सुचारू रूप से चलाने के लिए सही DNS और रूटिंग कॉन्फिगरेशन
                     val builder = Builder()
                         .setSession("WhatsAppTunnel")
                         .addAddress("10.0.0.2", 24)
+                        .addDnsServer("8.8.8.8")
+                        .addDnsServer("1.1.1.1")
                         .addRoute("0.0.0.0", 0)
                     
                     builder.addAllowedApplication("com.whatsapp")
@@ -526,10 +525,16 @@ jobs:
                 return START_STICKY
             }
             
-            override fun onDestroy() {
+            private fun stopVpnTunnel() {
                 try {
                     vpnInterface?.close()
+                    vpnInterface = null
                 } catch (e: Exception) {}
+                stopSelf()
+            }
+            
+            override fun onDestroy() {
+                stopVpnTunnel()
                 super.onDestroy()
             }
         }
@@ -548,7 +553,8 @@ jobs:
             }
             fun stopV2rayServer(context: Context) {
                 val intent = Intent(context, RealVpnCore::class.java)
-                context.stopService(intent)
+                intent.action = "STOP_VPN"
+                context.startService(intent) // एक्शन भेजकर सर्विस को बंद करने का सिग्नल
             }
         }
         EOF
