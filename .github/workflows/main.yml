@@ -19,14 +19,8 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: '8.2'
-
-    - name: Configure Repositories, Disable Minify and Inject Latest QR Scanner
+    - name: Setup Gradient Repositories and Disable Minify
       run: |
-        # 1. रिपॉजिटरी पाथ फिक्स करना
         if [ -f settings.gradle ]; then
           sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle
         fi
@@ -34,15 +28,10 @@ jobs:
           sed -i 's/google()/google()\n        mavenCentral()/g' build.gradle
         fi
         if [ -f app/build.gradle ]; then
-          # R8/Minify को पूरी तरह डिसेबल रखना
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
-          
-          # पुराना MMKV आर्टीफेक्ट लिंक करना
           sed -i 's/implementation.*com.github.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
           sed -i 's/implementation.*com.tencent:mmkv.*/implementation files("mmkv.aar")/g' app/build.gradle
-          
-          # कोट्लिन कोड के तालमेल के लिए बिल्कुल लेटेस्ट 4.3.0 वर्जन ही इंजेक्ट करना
           sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
@@ -459,11 +448,11 @@ jobs:
         }
         EOF
 
-    - name: Clean and Build with Gradle
-      run: |
-        chmod +x gradlew
-        ./gradlew clean --refresh-dependencies
-        ./gradlew assembleDebug --no-build-cache
+    - name: Setup and Run In-Built Gradle Build
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: '8.2'
+        arguments: assembleDebug --no-build-cache
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
