@@ -156,9 +156,9 @@ jobs:
         </RelativeLayout>
         EOF
 
-        # 2. सेटिंग्स स्क्रीन
+        # 2. सेटिंग्स स्क्रीन [FIXED XML TAG HERE]
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        xml version="1.0" encoding="utf-8"?>
+        <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -236,7 +236,7 @@ jobs:
         </LinearLayout>
         EOF
 
-        # 3. वेलकम बैनर (क्रॉस बटन परफेक्ट कोने में सेट)
+        # 3. वेलकम बैनर
         cat << 'EOF' > app/src/main/res/layout/dialog_welcome.xml
         <?xml version="1.0" encoding="utf-8"?>
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
@@ -249,7 +249,7 @@ jobs:
                 android:id="@+id/btnCloseBanner"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_parentEnd="true"
+                android:layout_alignParentEnd="true"
                 android:layout_alignParentTop="true"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@android:drawable/ic_menu_close_clear_cancel"
