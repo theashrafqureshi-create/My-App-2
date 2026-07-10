@@ -19,24 +19,28 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Fix Directory Structure and Move MMKV Safely
+    - name: Fix Directory Structure and Local MMKV Link
       run: |
-        # [FIXED] यहाँ हम libs फोल्डर बनाकर mmkv.aar को सही जगह मूव कर रहे हैं
+        # 1. libs फोल्डर बनाना और mmkv.aar को सही जगह सेट करना
         mkdir -p app/libs
         if [ -f app/mmkv.aar ]; then
           mv app/mmkv.aar app/libs/
         fi
         
-        # ग्रैडल रिपॉजिटरी को सही करना
+        # 2. ग्रैडल रिपॉजिटरी को अपडेट करना
         sed -i 's/google()/google()\n        mavenCentral()/g' settings.gradle || true
         
-        # app/build.gradle में डिपेंडेंसी का सही रास्ता देना
+        # 3. [THE CRITICAL FIX] build.gradle के अंदर से ऑनलाइन mmkv डिपेंडेंसी को हटाकर लोकल पाथ सेट करना
         if [ -f app/build.gradle ]; then
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
-          # पुराने mmkv इन्जेक्शन को साफ़ करके सही पाथ देना
-          sed -i 's/implementation files("mmkv.aar")/implementation files("libs\/mmkv.aar")/g' app/build.gradle
-          sed -i '/dependencies {/a \    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
+          
+          # यहाँ हम ऑनलाइन डिपेंडेंसी की लाइनों को साफ़ कर रहे हैं ताकि एरर न आए
+          sed -i '/com.github.tencent:mmkv/d' app/build.gradle
+          sed -i '/com.tencent:mmkv/d' app/build.gradle
+          
+          # हमारी लोकल mmkv.aar फ़ाइल को ग्रैडल इंजन के साथ जोड़ना
+          sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")\n    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
         fi
 
     - name: Rewrite AndroidManifest with Strict Mobile Compatibility
@@ -413,7 +417,7 @@ jobs:
         }
         EOF
 
-        # 3. RealVpnCore.kt (The True Standalone Custom VPN Service Engine)
+        # 3. RealVpnCore.kt
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
         package com.v2ray.ang.service
         
@@ -437,23 +441,20 @@ jobs:
                 
                 if (!isRunning) {
                     try {
-                        // मोबाइल नेटवर्क (Modem) की क्षमता के हिसाब से पैकेट्स को सिंक करना
                         val builder = Builder()
                             .setSession("WhatsAppVpnTunnel")
-                            .setMtu(1500) // व्हाट्सएप के हैवी डेटा लोड को रोकने के लिए सही साइज
+                            .setMtu(1500)
                             .addAddress("10.0.0.2", 32)
                             .addDnsServer("8.8.8.8")
                             .addDnsServer("1.1.1.1")
-                            .addRoute("0.0.0.0", 0) // वैश्विक इंटरनेट रूट खुला रखना
+                            .addRoute("0.0.0.0", 0)
                         
-                        // केवल व्हाट्सएप ऐप्स को टनल में बाइंड करना
                         builder.addAllowedApplication("com.whatsapp")
                         builder.addAllowedApplication("com.whatsapp.w4b")
                         
                         vpnInterface = builder.establish()
                         isRunning = true
                         
-                        // डेटा पैकेट्स को मोबाइल हार्डवेयर पर लाइव फॉरवर्ड करने का लूप थ्रेड
                         startTunnelStreamEngine()
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -466,7 +467,6 @@ jobs:
                 tunnelThread = Thread {
                     try {
                         vpnInterface?.let { pfd ->
-                            // एंड्रॉइड सिस्टम सॉकेट को इनफिनिट लूप से बचाना (Mobile Side protect)
                             protect(pfd.fd)
                             
                             val fis = FileInputStream(pfd.fileDescriptor)
@@ -508,7 +508,7 @@ jobs:
         }
         EOF
 
-        # 4. AngConfigManager.kt & Mock configurations for clean compilation
+        # 4. AngConfigManager & Mocks
         cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/util/AngConfigManager.kt
         package com.v2ray.ang.util
         import android.content.Context
