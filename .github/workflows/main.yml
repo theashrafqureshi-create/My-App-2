@@ -32,7 +32,6 @@ jobs:
         fi
 
     - name: Force Clean Old Broken Manifest
-      # यह कमांड उस पुरानी अधूरी मैनिफेस्ट फाइल को हटाकर आपकी असली MainActivity के पते के साथ नया मैनिफेस्ट बना देगा
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -41,7 +40,7 @@ jobs:
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
                 android:allowBackup="true"
-                android:label="My App"
+                android:label="WhatsApp VPN"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity
@@ -54,6 +53,54 @@ jobs:
                 </activity>
             </application>
         </manifest>
+        EOF
+
+    - name: Create Real Layout for MainActivity
+      run: |
+        # यहाँ हम आपकी असली कोडिंग फ़ाइल के लिए बिल्कुल परफेक्ट कनेक्ट बटन और स्टेटस टेक्स्ट वाला लेआउट बना रहे हैं
+        mkdir -p app/src/main/res/layout
+        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+        <?xml version="1.0" encoding="utf-8"?>
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="#F5F5F7"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Disconnected"
+                android:textColor="#7F8C8D"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:layout_centerHorizontal="true"
+                android:layout_marginTop="150dp"/>
+
+            <Button
+                android:id="@+id/btnConnect"
+                android:layout_width="200dp"
+                android:layout_height="200dp"
+                android:text="CONNECT"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_centerInParent="true"
+                android:elevation="8dp"/>
+                
+        </RelativeLayout>
+        EOF
+
+    - name: Create Default App Strings
+      run: |
+        # डायलॉग पॉप-अप के लिए जो 'welcome_message' आपकी फाइल ढूंढ रही है, उसे यहाँ डिफ़ॉल्ट सेट कर देते हैं
+        mkdir -p app/src/main/res/values
+        cat << 'EOF' > app/src/main/res/values/strings.xml
+        <resources>
+            <string name="app_name">WhatsApp VPN</string>
+            <string name="welcome_message">Welcome to WhatsApp VPN. Click CONNECT to start the proxy service securely without external software.</string>
+        </resources>
         EOF
 
     - name: Clean and Build with Gradle
