@@ -278,55 +278,6 @@ jobs:
         </RelativeLayout>
         EOF
 
-    - name: Write Missing Service and Util Classes Directly via Script
-      run: |
-        # यहाँ हम वो दोनों फोल्डर्स और मिसिंग फाइलें बना रहे हैं जिन्हें ढूंढने में ग्रैडल फेल हो रहा था
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/service
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/util
-        
-        # 1. V2rayServiceManager.kt को सही जगह पर राइट करना
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/V2rayServiceManager.kt
-        package com.v2ray.ang.service
-
-        import android.content.Context
-        import android.content.Intent
-        import com.v2ray.ang.service.V2RayService
-
-        object V2rayServiceManager {
-            fun startV2rayServer(context: Context) {
-                val intent = Intent(context, V2RayService::class.java)
-                intent.putExtra("COMMAND", "START")
-                context.startService(intent)
-            }
-
-            fun stopV2rayServer(context: Context) {
-                val intent = Intent(context, V2RayService::class.java)
-                intent.putExtra("COMMAND", "STOP")
-                context.startService(intent)
-            }
-        }
-        EOF
-
-        # 2. AngConfigManager.kt को सही जगह पर राइट करना (यह आपकी MmkvManager सेटिंग को लिंक कर देगा)
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/util/AngConfigManager.kt
-        package com.v2ray.ang.util
-
-        import android.content.Context
-        import com.v2ray.ang.util.MmkvManager
-
-        object AngConfigManager {
-            fun importConfig(context: Context, serverLink: String): Boolean {
-                return if (serverLink.isNotEmpty()) {
-                    MmkvManager.removeAllServer()
-                    val index = MmkvManager.importConfig(serverLink)
-                    index != null && index.isNotEmpty()
-                } else {
-                    false
-                }
-            }
-        }
-        EOF
-
     - name: Inject Strict Permissions and Main Code Architecture
       run: |
         mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
@@ -598,15 +549,12 @@ jobs:
         EOF
 
     - name: Clean and Build with Gradle
-      run: ./gradlew clean assembleDebug --no-build-cache || gradle clean assembleDebug --no-build-cache
-
+      run: |
+        ./gradlew clean --refresh-dependencies
+        ./gradlew assembleDebug --no-build-cache
+        
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: my-app-apk
         path: app/build/outputs/apk/debug/app-debug.apk
-    - name: Clean and Build with Gradle
-      run: |
-        ./gradlew clean --refresh-dependencies
-        ./gradlew assembleDebug --no-build-cache
-        
