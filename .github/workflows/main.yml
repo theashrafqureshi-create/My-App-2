@@ -45,8 +45,6 @@ jobs:
         include ':app'
         EOF
 
-    # यहाँ हमने पुराना टूटी हुई बाइनरी डाउनलोड करने वाला स्टेप पूरा हटा दिया है
-
     - name: Write Shadowsocks Compliant Gradle Structure
       run: |
         cat << 'EOF' > app/build.gradle
@@ -88,9 +86,6 @@ jobs:
             implementation 'androidx.appcompat:appcompat:1.6.1'
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-            
-            // पुराना shadowsocks-core यहाँ से हटा दिया गया है क्योंकि हमारा इंजन अब इनबिल्ट जावा में है
-            
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
         }
@@ -106,11 +101,12 @@ jobs:
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+            
             <application
                 android:allowBackup="true"
-                android:icon="@mipmap/ic_launcher"
+                android:icon="@android:drawable/sym_def_app_icon"
+                android:roundIcon="@android:drawable/sym_def_app_icon"
                 android:label="WhatsApp VPN"
-                android:roundIcon="@mipmap/ic_launcher_round"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity
