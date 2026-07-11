@@ -29,7 +29,7 @@ jobs:
         fi
         
         # 2. ग्रैडल रिपॉजिटरी बेस को सुरक्षित तरीके से ओवरराइट करना
-        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal(); maven { url \"https://jitpack.io\" } } }" > settings.gradle
         echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral(); maven { url \"https://jitpack.io\" } } }" >> settings.gradle
         echo "rootProject.name = \"My-App-2\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
@@ -42,6 +42,9 @@ jobs:
           # पुराने ऑनलाइन लिंक्स हटाना जो बिल्ड रोक रहे थे
           sed -i '/com.github.tencent:mmkv/d' app/build.gradle
           sed -i '/com.tencent:mmkv/d' app/build.gradle
+          
+          # रिपॉजिटरी ब्लॉक को सीधे ऐप लेवल पर भी इंजेक्ट करना ताकि डाउनलोड मिस न हो
+          sed -i '/android {/i repositories { google(); mavenCentral(); maven { url "https://jitpack.io" } }' app/build.gradle
           
           # डिपेंडेंसी ब्लॉक के शुरू होते ही लोकल mmkv, zxing और असली V2Ray-Core इंजन इंजेक्ट करना
           sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")\n    implementation "com.github.2dust:v2rayNG:1.8.5"\n    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
