@@ -76,6 +76,13 @@ jobs:
                     shrinkResources false
                 }
             }
+            
+            // यहाँ जावा और कोट्लिन दोनों का वर्ज़न 17 पर एकदम बराबर लॉक कर दिया है
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            
             kotlinOptions {
                 jvmTarget = '17'
             }
