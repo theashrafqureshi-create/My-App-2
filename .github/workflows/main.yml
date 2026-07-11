@@ -34,7 +34,7 @@ jobs:
         echo "rootProject.name = \"My-App-2\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
         
-        # 3. पूरे app/build.gradle को कस्टमाइज्ड इंजन के साथ नए सिरे से राइट करना ताकि SDK एरर खत्म हो जाए
+        # 3. पूरे app/build.gradle को सही नामस्थान (Namespace) के साथ रीबिल्ड करना
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
@@ -42,6 +42,7 @@ jobs:
         }
 
         android {
+            namespace 'com.v2ray.ang'
             compileSdk 34
 
             defaultConfig {
