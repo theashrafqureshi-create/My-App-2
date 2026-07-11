@@ -28,17 +28,23 @@ jobs:
           mv app/mmkv.aar app/libs/
         fi
         
-        # 2. ग्लोबल रिपॉजिटरी बेस को सुरक्षित तरीके से ओवरराइट करना
+        # 2. ग्लोबल रिपॉजिटरी बेस को सुरक्षित और लिबरल डाउनलोड मोड (PREFER_PROJECT) पर सेट करना
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral(); maven { url \"https://jitpack.io\" } } }" >> settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_PROJECT); repositories { google(); mavenCentral(); maven { url \"https://jitpack.io\" } } }" >> settings.gradle
         echo "rootProject.name = \"My-App-2\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
         
-        # 3. पूरे app/build.gradle को सही नामस्थान (Namespace) के साथ रीबिल्ड करना
+        # 3. पूरे app/build.gradle को सही नामस्थान और डायरेक्ट डाउनलोड पाथ के साथ सेट करना
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
             id 'org.jetbrains.kotlin.android'
+        }
+
+        repositories {
+            google()
+            mavenCentral()
+            maven { url "https://jitpack.io" }
         }
 
         android {
