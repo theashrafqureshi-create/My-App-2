@@ -23,7 +23,7 @@ jobs:
     - name: Configure Clean Gradle Settings
       run: |
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }" >> settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } } }" >> settings.gradle
         echo "rootProject.name = \"WhatsApp-VPN-Pro\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
@@ -67,8 +67,8 @@ jobs:
         }
 
         dependencies {
-            // डायरेक्ट मावेन सेंट्रल से अप्रूव्ड और बिना एरर वाला शैडोसॉक्स कोर इंजन
-            implementation "org.shadowsocks:core:5.3.3"
+            // शुद्ध तथा सुरक्षित शैडोसॉक्स कोर इंजन (JitPack के लिए master-SNAPSHOT सबसे सेफ़ और अपडेटेड है)
+            implementation 'com.github.shadowsocks:core:master-SNAPSHOT'
             
             implementation "com.journeyapps:zxing-android-embedded:4.3.0"
             implementation "com.google.zxing:core:3.4.1"
@@ -125,7 +125,7 @@ jobs:
                     android:exported="false" />
                 
                 <service
-                    android:name="com.ashraf.whatsappvpn.service.WhatsAppVpnService"
+                    android:name="com.ashraf.whatsappvpn.service.ShadowsocksManager"
                     android:permission="android.permission.BIND_VPN_SERVICE"
                     android:exported="false"
                     android:foregroundServiceType="specialUse">
@@ -311,7 +311,7 @@ jobs:
         import androidx.appcompat.app.AlertDialog
         import androidx.appcompat.app.AppCompatActivity
         import com.ashraf.whatsappvpn.R
-        import com.ashraf.whatsappvpn.service.WhatsAppVpnService
+        import com.ashraf.whatsappvpn.service.ShadowsocksManager
 
         class MainActivity : AppCompatActivity() {
             private var isConnected = false
@@ -348,7 +348,7 @@ jobs:
             }
             
             private fun activateVpnCore() {
-                val intent = Intent(this, WhatsAppVpnService::class.java)
+                val intent = Intent(this, ShadowsocksManager::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { startForegroundService(intent) } else { startService(intent) }
                 isConnected = true
                 tvStatus.text = "Status: Connected (India Server Active)"
@@ -357,7 +357,8 @@ jobs:
             }
             
             private fun deactivateVpnCore() {
-                val intent = Intent(this, WhatsAppVpnService::class.java)
+                val intent = Intent(this, ShadowsocksManager::class.java)
+                // यहाँ हमारी रीनेम की हुई सर्विस में stopShadowsocksServer का लॉजिक रन होगा
                 intent.action = "STOP_VPN"
                 startService(intent)
                 isConnected = false
@@ -415,92 +416,7 @@ jobs:
         }
         EOF
 
-        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/service/WhatsAppVpnService.kt
-        package com.ashraf.whatsappvpn.service
-        import android.content.Intent
-        import android.net.VpnService
-        import android.app.NotificationChannel
-        import android.app.NotificationManager
-        import androidx.core.app.NotificationCompat
-        import android.os.Build
-        import android.os.ParcelFileDescriptor
-
-        class WhatsAppVpnService : VpnService() {
-            private var vpnInterface: ParcelFileDescriptor? = null
-            private var isRunning = false
-
-            override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-                if (intent != null && "STOP_VPN" == intent.action) {
-                    stopVpnCore()
-                    stopSelf()
-                    return START_NOT_STICKY
-                }
-
-                if (!isRunning) {
-                    setupNotification()
-                    try {
-                        val builder = Builder()
-                            .setSession("WhatsAppSecureBridge")
-                            .setMtu(1500)
-                            .addAddress("172.19.0.2", 24)
-                            .addDnsServer("1.1.1.1")
-                            .addRoute("0.0.0.0", 0)
-
-                        builder.addAllowedApplication("com.whatsapp")
-                        builder.addAllowedApplication("com.whatsapp.w4b")
-
-                        vpnInterface = builder.establish()
-                        isRunning = true
-
-                    } catch (e: Exception) { e.printStackTrace() }
-                }
-                return START_STICKY
-            }
-
-            private fun setupNotification() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel("whatsapp_vpn_channel", "WhatsApp Bridge Running", NotificationManager.IMPORTANCE_HIGH)
-                    getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
-                }
-                val notification = NotificationCompat.Builder(this, "whatsapp_vpn_channel")
-                    .setContentTitle("WhatsApp Bridge Active")
-                    .setContentText("Encrypted Shadowsocks routing layer is streaming successfully.")
-                    .setSmallIcon(android.R.drawable.ic_dialog_info)
-                    .build()
-                startForeground(1, notification)
-            }
-
-            private fun stopVpnCore() {
-                try {
-                    vpnInterface?.close()
-                    vpnInterface = null
-                    isRunning = false
-                } catch (e: Exception) {}
-            }
-
-            override fun onDestroy() {
-                stopVpnCore()
-                super.onDestroy()
-            }
-        }
-        EOF
-        
-    - name: Setup Gradle Build Engine
-      uses: gradle/actions/setup-gradle@v4
-      with:
-        gradle-version: '8.2'
-
-    - name: Compile and Build APK Directly
-      run: gradle assembleDebug --no-build-cache
-
-    - name: Rename and Prepare Official Product Artifact
+    - name: Build Android App Compilation Engine
       run: |
-        mkdir -p release_output
-        cp app/build/outputs/apk/debug/app-debug.apk release_output/WhatsApp_VPN_Pro.apk
-
-    - name: Upload Finished APK for Download
-      uses: actions/upload-artifact@v4
-      with:
-        name: WhatsApp_VPN_Pro
-        path: release_output/WhatsApp_VPN_Pro.apk
-        retention-days: 7
+        chmod +x gradlew
+        ./gradlew assembleDebug
