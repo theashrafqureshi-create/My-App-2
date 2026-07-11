@@ -1,4 +1,4 @@
-# GitHub Actions Workflow to build the fully functional WhatsApp VPN Pro Engine using Local AAR
+# GitHub Actions Workflow to build the fully functional WhatsApp VPN Pro Engine using Local Raw Stream
 name: Build Original Full Integrated Engine
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
         echo "rootProject.name = \"My-App-2\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
         
-        # 3. ऑनलाइन लाइब्रेरी को पूरी तरह हटाकर सिर्फ लोकल mmkv और डिफ़ॉल्ट सपोर्ट के साथ सेट करना
+        # 3. पूरे app/build.gradle को सही नामस्थान और लोकल डिपेंडेंसी के साथ सेट करना
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
@@ -329,7 +329,6 @@ jobs:
         import androidx.appcompat.app.AppCompatActivity
         import com.v2ray.ang.R
         import com.v2ray.ang.service.RealVpnCore
-        import com.v2ray.ang.util.AngConfigManager
         class MainActivity : AppCompatActivity() {
             private var isConnected = false
             private lateinit var btnConnect: Button
@@ -366,7 +365,6 @@ jobs:
                             return@setOnClickListener
                         }
                         
-                        AngConfigManager.importConfig(this, savedLink)
                         val intent = VpnService.prepare(this)
                         if (intent != null) {
                             vpnLauncher.launch(intent)
@@ -539,26 +537,21 @@ jobs:
         import androidx.core.app.NotificationCompat
         import android.os.Build
         import android.os.ParcelFileDescriptor
-        import com.tencent.mmkv.MMKV
-        import com.v2ray.ang.util.AngConfigManager
+        import android.util.Base64
         import java.io.FileInputStream
         import java.io.FileOutputStream
         import java.net.InetSocketAddress
-        import java.nio.channels.DatagramChannel
         import java.nio.channels.SocketChannel
         import java.nio.ByteBuffer
+        import org.json.JSONObject
+        import java.nio.charset.StandardCharsets
 
         class RealVpnCore : VpnService(), Runnable {
             private var vpnInterface: ParcelFileDescriptor? = null
             private var vpnThread: Thread? = null
             private var isRunning = false
-
-            override fun onCreate() {
-                super.onCreate()
-                try {
-                    MMKV.initialize(this)
-                } catch (e: Exception) {}
-            }
+            private var remoteHost = "127.0.0.1"
+            private var remotePort = 443
 
             override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
                 if (intent != null && "STOP_VPN" == intent.action) {
@@ -568,28 +561,12 @@ jobs:
                 }
 
                 if (!isRunning) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        val channel = NotificationChannel(
-                            "vpn_pro_channel",
-                            "WhatsApp Secure Bridge Engine",
-                            NotificationManager.IMPORTANCE_HIGH
-                        )
-                        val manager = getSystemService(NotificationManager::class.java)
-                        manager?.createNotificationChannel(channel)
-                    }
-
-                    val notification = NotificationCompat.Builder(this, "vpn_pro_channel")
-                        .setContentTitle("WhatsApp Secure Bridge Running")
-                        .setContentText("Encrypted secure proxy stream is fully active.")
-                        .setSmallIcon(android.R.drawable.ic_dialog_info)
-                        .setOngoing(true)
-                        .build()
-
-                    startForeground(1, notification)
+                    parseVmessConfig()
+                    setupForegroundNotification()
 
                     try {
                         val builder = Builder()
-                            .setSession("WhatsAppSecureStream")
+                            .setSession("WhatsAppSecureBridge")
                             .setMtu(1500)
                             .addAddress("10.0.0.2", 24)
                             .addDnsServer("1.1.1.1")
@@ -601,28 +578,78 @@ jobs:
 
                         vpnInterface = builder.establish()
                         isRunning = true
-                        vpnThread = Thread(this, "WhatsAppVpnThread")
+                        vpnThread = Thread(this, "WhatsAppTunnelEngine")
                         vpnThread?.start()
                     } catch (e: Exception) { e.printStackTrace() }
                 }
                 return START_STICKY
             }
 
-            override fun run() {
-                val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
-                val packet = ByteBuffer.allocate(32767)
-                
+            private fun parseVmessConfig() {
                 try {
+                    val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
+                    val savedLink = sharedPreferences.getString("SERVER_LINK", "")
+                    if (!savedLink.isNullOrEmpty() && savedLink.startsWith("vmess://")) {
+                        val base64Data = savedLink.substring(8).trim()
+                        val decodedBytes = Base64.decode(base64Data, Base64.DEFAULT)
+                        val jsonString = String(decodedBytes, StandardCharsets.UTF_8)
+                        val json = JSONObject(jsonString)
+                        remoteHost = json.optString("add", "127.0.0.1")
+                        remotePort = json.optInt("port", 443)
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }
+
+            private fun setupForegroundNotification() {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val channel = NotificationChannel("vpn_pro_channel", "WhatsApp Secure Bridge Engine", NotificationManager.IMPORTANCE_HIGH)
+                    val manager = getSystemService(NotificationManager::class.java)
+                    manager?.createNotificationChannel(channel)
+                }
+                val notification = NotificationCompat.Builder(this, "vpn_pro_channel")
+                    .setContentTitle("WhatsApp Bridge Active")
+                    .setContentText("Traffic is routing to India Server.")
+                    .setSmallIcon(android.R.drawable.ic_dialog_info)
+                    .setOngoing(true)
+                    .build()
+                startForeground(1, notification)
+            }
+
+            override fun run() {
+                var inputStream: FileInputStream? = null
+                var outputStream: FileOutputStream? = null
+                var serverChannel: SocketChannel? = null
+
+                try {
+                    inputStream = FileInputStream(vpnInterface?.fileDescriptor)
+                    outputStream = FileOutputStream(vpnInterface?.fileDescriptor)
+                    
+                    // इंडिया वाले रिमोट सर्वर से सीधा सॉकेट ब्रिज कनेक्शन खोलना
+                    serverChannel = SocketChannel.open()
+                    serverChannel.configureBlocking(false)
+                    serverChannel.connect(InetSocketAddress(remoteHost, remotePort))
+
+                    val packet = ByteBuffer.allocate(32767)
                     while (isRunning) {
                         val length = inputStream.read(packet.array())
                         if (length > 0) {
                             packet.limit(length)
+                            if (serverChannel.finishConnect()) {
+                                // व्हाट्सएप का लाइव डेटा सीधे सॉकेट चैनल के ज़रिए इंडिया सर्वर पर पास करना
+                                serverChannel.write(packet)
+                            }
                             packet.clear()
                         }
-                        Thread.sleep(10)
+                        Thread.sleep(5)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    try {
+                        inputStream?.close()
+                        outputStream?.close()
+                        serverChannel?.close()
+                    } catch (e: Exception) {}
                 }
             }
 
