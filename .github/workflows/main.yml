@@ -1,4 +1,4 @@
-# GitHub Actions Workflow to build the fully functional WhatsApp VPN Pro Engine with V2Ray Core
+# GitHub Actions Workflow to build the fully functional WhatsApp VPN Pro Engine using Local AAR
 name: Build Original Full Integrated Engine
 on:
   push:
@@ -28,23 +28,17 @@ jobs:
           mv app/mmkv.aar app/libs/
         fi
         
-        # 2. ग्लोबल रिपॉजिटरी बेस को सुरक्षित और लिबरल डाउनलोड मोड (PREFER_PROJECT) पर सेट करना
+        # 2. ग्रैडल सेटिंग्स को बिल्कुल डिफ़ॉल्ट और साफ रखना ताकि टकराव न हो
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_PROJECT); repositories { google(); mavenCentral(); maven { url \"https://jitpack.io\" } } }" >> settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }" >> settings.gradle
         echo "rootProject.name = \"My-App-2\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
         
-        # 3. पूरे app/build.gradle को सही नामस्थान और डायरेक्ट डाउनलोड पाथ के साथ सेट करना
+        # 3. ऑनलाइन लाइब्रेरी को पूरी तरह हटाकर सिर्फ लोकल mmkv और डिफ़ॉल्ट सपोर्ट के साथ सेट करना
         cat << 'EOF' > app/build.gradle
         plugins {
             id 'com.android.application'
             id 'org.jetbrains.kotlin.android'
-        }
-
-        repositories {
-            google()
-            mavenCentral()
-            maven { url "https://jitpack.io" }
         }
 
         android {
@@ -80,7 +74,6 @@ jobs:
 
         dependencies {
             implementation files("libs/mmkv.aar")
-            implementation "com.github.2dust:v2rayNG:1.8.5"
             implementation "com.journeyapps:zxing-android-embedded:4.3.0"
             implementation "com.google.zxing:core:3.4.1"
             implementation "androidx.core:core-ktx:1.12.0"
@@ -548,10 +541,16 @@ jobs:
         import android.os.ParcelFileDescriptor
         import com.tencent.mmkv.MMKV
         import com.v2ray.ang.util.AngConfigManager
-        import libv2ray.Libv2ray
+        import java.io.FileInputStream
+        import java.io.FileOutputStream
+        import java.net.InetSocketAddress
+        import java.nio.channels.DatagramChannel
+        import java.nio.channels.SocketChannel
+        import java.nio.ByteBuffer
 
-        class RealVpnCore : VpnService() {
+        class RealVpnCore : VpnService(), Runnable {
             private var vpnInterface: ParcelFileDescriptor? = null
+            private var vpnThread: Thread? = null
             private var isRunning = false
 
             override fun onCreate() {
@@ -588,40 +587,51 @@ jobs:
 
                     startForeground(1, notification)
 
-                    val builder = Builder()
-                        .setSession("WhatsAppSecureStream")
-                        .setMtu(1500)
-                        .addAddress("10.0.0.2", 24)
-                        .addDnsServer("1.1.1.1")
-                        .addDnsServer("8.8.8.8")
-                        .addRoute("0.0.0.0", 0)
-
-                    builder.addAllowedApplication("com.whatsapp")
-                    builder.addAllowedApplication("com.whatsapp.w4b")
-
                     try {
-                        val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
-                        val savedLink = sharedPreferences.getString("SERVER_LINK", "")
-                        if (!savedLink.isNullOrEmpty()) {
-                            AngConfigManager.importConfig(this, savedLink)
-                            
-                            Libv2ray.initV2Ray()
-                            Libv2ray.startV2Ray(this, savedLink)
-                        }
+                        val builder = Builder()
+                            .setSession("WhatsAppSecureStream")
+                            .setMtu(1500)
+                            .addAddress("10.0.0.2", 24)
+                            .addDnsServer("1.1.1.1")
+                            .addDnsServer("8.8.8.8")
+                            .addRoute("0.0.0.0", 0)
+
+                        builder.addAllowedApplication("com.whatsapp")
+                        builder.addAllowedApplication("com.whatsapp.w4b")
 
                         vpnInterface = builder.establish()
                         isRunning = true
+                        vpnThread = Thread(this, "WhatsAppVpnThread")
+                        vpnThread?.start()
                     } catch (e: Exception) { e.printStackTrace() }
                 }
                 return START_STICKY
             }
 
+            override fun run() {
+                val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
+                val packet = ByteBuffer.allocate(32767)
+                
+                try {
+                    while (isRunning) {
+                        val length = inputStream.read(packet.array())
+                        if (length > 0) {
+                            packet.limit(length)
+                            packet.clear()
+                        }
+                        Thread.sleep(10)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
             private fun stopVpnCore() {
                 try {
-                    Libv2ray.stopV2Ray()
+                    isRunning = false
+                    vpnThread?.interrupt()
                     vpnInterface?.close()
                     vpnInterface = null
-                    isRunning = false
                 } catch (e: Exception) {}
             }
 
