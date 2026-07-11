@@ -447,7 +447,7 @@ jobs:
                 etVpnLink = findViewById(R.id.etVpnLink)
                 val btnSaveLink = findViewById<Button>(R.id.btnSaveLink)
                 val btnScanQr = findViewById<Button>(R.id.btnScanQr)
-                val btnChooseGallery = findViewById<Button>(<bundle_id_placeholder_r_id_btnChooseGallery>)
+                val btnChooseGallery = findViewById<Button>(R.id.btnChooseGallery)
                 
                 val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
                 etVpnLink.setText(sharedPreferences.getString("SERVER_LINK", ""))
@@ -578,13 +578,11 @@ jobs:
                 val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
                 val packet = ByteBuffer.allocate(32767)
                 
-                // सऊदी अरब व्हाट्सएप ब्लॉक बाईपास के लिए डायरेक्ट डीएनएस + सॉकेट स्ट्रीम लूप
                 try {
                     while (isRunning) {
                         val length = inputStream.read(packet.array())
                         if (length > 0) {
                             packet.limit(length)
-                            // व्हाट्सएप पैकेट्स को सिंक मोड में स्ट्रीम रिमोट सर्वर पर बाईपास करना
                             packet.clear()
                         }
                         Thread.sleep(10)
