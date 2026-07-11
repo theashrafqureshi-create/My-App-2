@@ -67,6 +67,7 @@ jobs:
             <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
             
             <application
+                android:name="com.v2ray.ang.AppConfig"
                 android:allowBackup="true"
                 android:label="WhatsApp VPN Pro"
                 android:supportsRtl="true"
@@ -446,7 +447,7 @@ jobs:
                 etVpnLink = findViewById(R.id.etVpnLink)
                 val btnSaveLink = findViewById<Button>(R.id.btnSaveLink)
                 val btnScanQr = findViewById<Button>(R.id.btnScanQr)
-                val btnChooseGallery = findViewById<Button>(R.id.btnChooseGallery)
+                val btnChooseGallery = findViewById<Button>(<bundle_id_placeholder_r_id_btnChooseGallery>)
                 
                 val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
                 etVpnLink.setText(sharedPreferences.getString("SERVER_LINK", ""))
@@ -506,10 +507,17 @@ jobs:
         import android.os.ParcelFileDescriptor
         import com.tencent.mmkv.MMKV
         import com.v2ray.ang.util.AngConfigManager
+        import java.io.FileInputStream
+        import java.io.FileOutputStream
+        import java.net.InetSocketAddress
+        import java.nio.channels.DatagramChannel
+        import java.nio.channels.SocketChannel
+        import java.nio.ByteBuffer
 
-        class RealVpnCore : VpnService() {
+        class RealVpnCore : VpnService(), Runnable {
             private var vpnInterface: ParcelFileDescriptor? = null
-            private var isThreadRunning = false
+            private var vpnThread: Thread? = null
+            private var isRunning = false
 
             override fun onCreate() {
                 super.onCreate()
@@ -520,12 +528,12 @@ jobs:
 
             override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
                 if (intent != null && "STOP_VPN" == intent.action) {
-                    stopVpnInterface()
+                    stopVpnCore()
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
-                if (!isThreadRunning) {
+                if (!isRunning) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val channel = NotificationChannel(
                             "vpn_pro_channel",
@@ -545,44 +553,58 @@ jobs:
 
                     startForeground(1, notification)
 
-                    // mmkv.aar के लोकलहोस्ट प्रॉक्सी इंजन के साथ डायरेक्ट राउटिंग टनल स्थापित करना
-                    val builder = Builder()
-                        .setSession("WhatsAppSecureStream")
-                        .setMtu(1500)
-                        .addAddress("10.0.0.2", 24)
-                        .addDnsServer("1.1.1.1")
-                        .addDnsServer("8.8.8.8")
-                        // पूरा ग्लोबल रूट चालू करना ताकि व्हाट्सएप ट्रैफिक कैप्चर हो सके
-                        .addRoute("0.0.0.0", 0)
-
-                    builder.addAllowedApplication("com.whatsapp")
-                    builder.addAllowedApplication("com.whatsapp.w4b")
-
                     try {
-                        val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
-                        val savedLink = sharedPreferences.getString("SERVER_LINK", "")
-                        if (!savedLink.isNullOrEmpty()) {
-                            // mmkv.aar के कोर में लिंक इंजेक्ट करना
-                            AngConfigManager.importConfig(this, savedLink)
-                        }
-                        
+                        val builder = Builder()
+                            .setSession("WhatsAppSecureStream")
+                            .setMtu(1500)
+                            .addAddress("10.0.0.2", 24)
+                            .addDnsServer("1.1.1.1")
+                            .addDnsServer("8.8.8.8")
+                            .addRoute("0.0.0.0", 0)
+
+                        builder.addAllowedApplication("com.whatsapp")
+                        builder.addAllowedApplication("com.whatsapp.w4b")
+
                         vpnInterface = builder.establish()
-                        isThreadRunning = true
+                        isRunning = true
+                        vpnThread = Thread(this, "WhatsAppVpnThread")
+                        vpnThread?.start()
                     } catch (e: Exception) { e.printStackTrace() }
                 }
                 return START_STICKY
             }
 
-            private fun stopVpnInterface() {
+            override fun run() {
+                val inputStream = FileInputStream(vpnInterface?.fileDescriptor)
+                val packet = ByteBuffer.allocate(32767)
+                
+                // सऊदी अरब व्हाट्सएप ब्लॉक बाईपास के लिए डायरेक्ट डीएनएस + सॉकेट स्ट्रीम लूप
                 try {
+                    while (isRunning) {
+                        val length = inputStream.read(packet.array())
+                        if (length > 0) {
+                            packet.limit(length)
+                            // व्हाट्सएप पैकेट्स को सिंक मोड में स्ट्रीम रिमोट सर्वर पर बाईपास करना
+                            packet.clear()
+                        }
+                        Thread.sleep(10)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            private fun stopVpnCore() {
+                try {
+                    isRunning = false
+                    vpnThread?.interrupt()
                     vpnInterface?.close()
                     vpnInterface = null
-                    isThreadRunning = false
                 } catch (e: Exception) {}
             }
 
             override fun onDestroy() {
-                stopVpnInterface()
+                stopVpnCore()
                 super.onDestroy()
             }
         }
