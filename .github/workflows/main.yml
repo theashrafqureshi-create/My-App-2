@@ -504,22 +504,28 @@ jobs:
         import androidx.core.app.NotificationCompat
         import android.os.Build
         import android.os.ParcelFileDescriptor
-        import java.io.FileInputStream
-        import java.io.FileOutputStream
-        import java.nio.ByteBuffer
+        import com.tencent.mmkv.MMKV
+        import com.v2ray.ang.util.AngConfigManager
 
         class RealVpnCore : VpnService() {
             private var vpnInterface: ParcelFileDescriptor? = null
             private var isThreadRunning = false
 
+            override fun onCreate() {
+                super.onCreate()
+                try {
+                    MMKV.initialize(this)
+                } catch (e: Exception) {}
+            }
+
             override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
                 if (intent != null && "STOP_VPN" == intent.action) {
+                    stopVpnInterface()
                     stopSelf()
                     return START_NOT_STICKY
                 }
 
                 if (!isThreadRunning) {
-                    // 1. Notification Channel Fix for Android 8.0+ Key Visibility
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                         val channel = NotificationChannel(
                             "vpn_pro_channel",
@@ -539,7 +545,6 @@ jobs:
 
                     startForeground(1, notification)
 
-                    // 2. Optimized WhatsApp Calling Routes & DNS for Saudi Arabia Bypass
                     val builder = Builder()
                         .setSession("WhatsAppSecureStream")
                         .setMtu(1500)
@@ -552,6 +557,13 @@ jobs:
                     builder.addAllowedApplication("com.whatsapp.w4b")
 
                     try {
+                        // लोड शेयर्ड प्रिफरेंस लिंक सीधे इंजन कोर में इंजेक्ट करने के लिए
+                        val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
+                        val savedLink = sharedPreferences.getString("SERVER_LINK", "")
+                        if (!savedLink.isNullOrEmpty()) {
+                            AngConfigManager.importConfig(this, savedLink)
+                        }
+                        
                         vpnInterface = builder.establish()
                         isThreadRunning = true
                     } catch (e: Exception) { e.printStackTrace() }
@@ -559,10 +571,16 @@ jobs:
                 return START_STICKY
             }
 
-            override fun onDestroy() {
+            private fun stopVpnInterface() {
                 try {
                     vpnInterface?.close()
+                    vpnInterface = null
+                    isThreadRunning = false
                 } catch (e: Exception) {}
+            }
+
+            override fun onDestroy() {
+                stopVpnInterface()
                 super.onDestroy()
             }
         }
