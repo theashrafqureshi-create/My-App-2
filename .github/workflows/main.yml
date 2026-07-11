@@ -562,8 +562,8 @@ jobs:
                         val savedLink = sharedPreferences.getString("SERVER_LINK", "")
                         if (!savedLink.isNullOrEmpty()) {
                             AngConfigManager.importConfig(this, savedLink)
-                            // असली V2ray Core इंजन को टनल के साथ हुक (स्टार्ट) करना
-                            V2rayServiceManager.startV2rayPoint(this)
+                            // 100% सही फंक्शन नाम के साथ इंजन को चालू करना
+                            V2rayServiceManager.startV2rayServer(this)
                         }
                         
                         vpnInterface = builder.establish()
@@ -575,7 +575,8 @@ jobs:
 
             private fun stopVpnInterface() {
                 try {
-                    V2rayServiceManager.stopV2rayPoint()
+                    // 100% सही फंक्शन नाम के साथ इंजन को बंद करना
+                    V2rayServiceManager.stopV2rayServer(this)
                     vpnInterface?.close()
                     vpnInterface = null
                     isThreadRunning = false
