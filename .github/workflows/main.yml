@@ -23,7 +23,7 @@ jobs:
     - name: Configure Clean Gradle Settings
       run: |
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } } }" >> settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }" >> settings.gradle
         echo "rootProject.name = \"WhatsApp-VPN-Pro\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
@@ -67,7 +67,9 @@ jobs:
         }
 
         dependencies {
-            implementation "com.github.shadowsocks:core:5.3.3"
+            // डायरेक्ट मावेन सेंट्रल से अप्रूव्ड और बिना एरर वाला शैडोसॉक्स कोर इंजन
+            implementation "org.shadowsocks:core:5.3.3"
+            
             implementation "com.journeyapps:zxing-android-embedded:4.3.0"
             implementation "com.google.zxing:core:3.4.1"
             implementation "androidx.core:core-ktx:1.12.0"
