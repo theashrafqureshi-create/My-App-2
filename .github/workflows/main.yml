@@ -506,6 +506,7 @@ jobs:
         import android.os.ParcelFileDescriptor
         import com.tencent.mmkv.MMKV
         import com.v2ray.ang.util.AngConfigManager
+        import com.v2ray.ang.service.V2rayServiceManager
 
         class RealVpnCore : VpnService() {
             private var vpnInterface: ParcelFileDescriptor? = null
@@ -557,11 +558,12 @@ jobs:
                     builder.addAllowedApplication("com.whatsapp.w4b")
 
                     try {
-                        // लोड शेयर्ड प्रिफरेंस लिंक सीधे इंजन कोर में इंजेक्ट करने के लिए
                         val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
                         val savedLink = sharedPreferences.getString("SERVER_LINK", "")
                         if (!savedLink.isNullOrEmpty()) {
                             AngConfigManager.importConfig(this, savedLink)
+                            // असली V2ray Core इंजन को टनल के साथ हुक (स्टार्ट) करना
+                            V2rayServiceManager.startV2rayPoint(this)
                         }
                         
                         vpnInterface = builder.establish()
@@ -573,6 +575,7 @@ jobs:
 
             private fun stopVpnInterface() {
                 try {
+                    V2rayServiceManager.stopV2rayPoint()
                     vpnInterface?.close()
                     vpnInterface = null
                     isThreadRunning = false
