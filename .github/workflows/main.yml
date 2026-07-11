@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Set up job
+    - name: Set up Job
       uses: actions/checkout@v4
 
     - name: Checkout Code
@@ -39,19 +39,13 @@ jobs:
             repositories {
                 google()
                 mavenCentral()
-                flatDir {
-                    dirs 'app/libs'
-                }
             }
         }
         rootProject.name = "My-App-2"
         include ':app'
         EOF
 
-    - name: Download Shadowsocks Local Binary (Bypass JitPack 401)
-      run: |
-        # सीधे गिटहब के ऑफिशियल रिलीज से स्टेबल कनवर्टेड .aar फ़ाइल लोकल libs में डाउनलोड करना
-        curl -L -o app/libs/shadowsocks-core.aar https://github.com/shadowsocks/shadowsocks-android/releases/download/v5.3.3/shadowsocks-core-5.3.3.aar
+    # यहाँ हमने पुराना टूटी हुई बाइनरी डाउनलोड करने वाला स्टेप पूरा हटा दिया है
 
     - name: Write Shadowsocks Compliant Gradle Structure
       run: |
@@ -84,10 +78,6 @@ jobs:
                     shrinkResources false
                 }
             }
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
             kotlinOptions {
                 jvmTarget = '17'
             }
@@ -98,9 +88,8 @@ jobs:
             implementation 'androidx.appcompat:appcompat:1.6.1'
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-
-            // Local Components - सीधे लोकल फ़ाइल से लोड (JitPack की छुट्टी)
-            implementation (name: 'shadowsocks-core', ext: 'aar')
+            
+            // पुराना shadowsocks-core यहाँ से हटा दिया गया है क्योंकि हमारा इंजन अब इनबिल्ट जावा में है
             
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
@@ -111,7 +100,12 @@ jobs:
       run: |
         mkdir -p app/src/main
         cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+        <?xml version="1.0" encoding="utf-8"?>
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:tools="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
             <application
                 android:allowBackup="true"
                 android:icon="@mipmap/ic_launcher"
@@ -120,13 +114,21 @@ jobs:
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity
-                    android:name=".MainActivity"
+                    android:name=".ui.MainActivity"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
+                <service 
+                    android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
+                    android:permission="android.permission.BIND_VPN_SERVICE"
+                    android:exported="false">
+                    <intent-filter>
+                        <action android:name="android.net.VpnService" />
+                    </intent-filter>
+                </service>
             </application>
         </manifest>
         EOF
@@ -149,24 +151,69 @@ jobs:
 
     - name: Inject Pure Kotlin Logic with Shadowsocks Engine
       run: |
-        mkdir -p app/src/main/java/com/ashraf/whatsappvpn
-        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/MainActivity.kt
-        package com.ashraf.whatsappvpn
+        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/ui
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/MainActivity.kt
+        package com.ashraf.whatsappvpn.ui
 
+        import android.content.Intent
+        import android.net.VpnService
         import android.os.Bundle
-        import androidx.appcompat.app.AppCompatActivity
         import android.widget.Button
         import android.widget.Toast
+        import androidx.appcompat.app.AppCompatActivity
+        import com.ashraf.whatsappvpn.R
+        import com.ashraf.whatsappvpn.service.ShadowsocksVpnService
 
         class MainActivity : AppCompatActivity() {
+
+            private var isConnected = false
+
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
                 setContentView(R.layout.activity_main)
 
                 val btnConnect = findViewById<Button>(R.id.btnConnect)
+
                 btnConnect.setOnClickListener {
-                    Toast.makeText(this, "Shadowsocks Local Engine Initialized", Toast.LENGTH_SHORT).show()
+                    if (!isConnected) {
+                        val intent = VpnService.prepare(this)
+                        if (intent != null) {
+                            startActivityForResult(intent, 0)
+                        } else {
+                            onActivityResult(0, RESULT_OK, null)
+                        }
+                    } else {
+                        stopVpnService()
+                        btnConnect.text = "Connect Engine"
+                        Toast.makeText(this, "VPN Disconnected", Toast.LENGTH_SHORT).show()
+                        isConnected = false
+                    }
                 }
+            }
+
+            override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+                super.onActivityResult(requestCode, resultCode, data)
+                if (resultCode == RESULT_OK) {
+                    startVpnService()
+                    val btnConnect = findViewById<Button>(R.id.btnConnect)
+                    btnConnect.text = "Disconnect"
+                    Toast.makeText(this, "VPN Connected Successfully!", Toast.LENGTH_SHORT).show()
+                    isConnected = true
+                }
+            }
+
+            private fun startVpnService() {
+                val intent = Intent(this, ShadowsocksVpnService::class.java)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    startForegroundService(intent)
+                } else {
+                    startService(intent)
+                }
+            }
+
+            private fun stopVpnService() {
+                val intent = Intent(this, ShadowsocksVpnService::class.java)
+                stopService(intent)
             }
         }
         EOF
