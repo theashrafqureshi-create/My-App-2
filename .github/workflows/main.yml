@@ -25,7 +25,7 @@ jobs:
 
     - name: Configure Clean Gradle Settings
       run: |
-        mkdir -p app
+        mkdir -p app/libs
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -39,12 +39,19 @@ jobs:
             repositories {
                 google()
                 mavenCentral()
-                maven { url 'https://jitpack.io' }
+                flatDir {
+                    dirs 'app/libs'
+                }
             }
         }
         rootProject.name = "My-App-2"
         include ':app'
         EOF
+
+    - name: Download Shadowsocks Local Binary (Bypass JitPack 401)
+      run: |
+        # सीधे गिटहब के ऑफिशियल रिलीज से स्टेबल कनवर्टेड .aar फ़ाइल लोकल libs में डाउनलोड करना
+        curl -L -o app/libs/shadowsocks-core.aar https://github.com/shadowsocks/shadowsocks-android/releases/download/v5.3.3/shadowsocks-core-5.3.3.aar
 
     - name: Write Shadowsocks Compliant Gradle Structure
       run: |
@@ -92,8 +99,9 @@ jobs:
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-            // Core Components - शुद्ध तथा सुरक्षित शैडोसॉक्स पब्लिक इंजन
-            implementation 'com.github.shadowsocks:core:2.1.3'
+            // Local Components - सीधे लोकल फ़ाइल से लोड (JitPack की छुट्टी)
+            implementation (name: 'shadowsocks-core', ext: 'aar')
+            
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
         }
@@ -103,7 +111,7 @@ jobs:
       run: |
         mkdir -p app/src/main
         cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/and/android">
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
                 android:allowBackup="true"
                 android:icon="@mipmap/ic_launcher"
@@ -128,7 +136,7 @@ jobs:
         mkdir -p app/src/main/res/layout
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_1parent"
+            android:layout_width="match_parent"
             android:layout_height="match_parent">
             <Button
                 android:id="@+id/btnConnect"
@@ -153,11 +161,11 @@ jobs:
         class MainActivity : AppCompatActivity() {
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                setsetContentView(R.layout.activity_main)
+                setContentView(R.layout.activity_main)
 
                 val btnConnect = findViewById<Button>(R.id.btnConnect)
                 btnConnect.setOnClickListener {
-                    Toast.makeText(this, "Shadowsocks Public Engine Initialized", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Shadowsocks Local Engine Initialized", Toast.LENGTH_SHORT).show()
                 }
             }
         }
