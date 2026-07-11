@@ -26,9 +26,9 @@
             </intent-filter>
         </activity>
 
-        <!-- बैकग्राउंड में वीपीएन चालू रखने के लिए मुख्य सर्विस -->
+        <!-- बैकग्राउंड में शैडोसॉक्स वीपीएन चालू रखने के लिए मुख्य सर्विस -->
         <service
-            android:name=".service.V2rayServiceManager"
+            android:name=".service.ShadowsocksManager"
             android:exported="false"
             android:permission="android.permission.BIND_VPN_SERVICE">
             <intent-filter>
