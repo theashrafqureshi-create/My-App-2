@@ -1,4 +1,4 @@
-# GitHub Actions Workflow to build fully functional WhatsApp VPN Pro with embedded core binaries
+# GitHub Actions Workflow to build lightweight WhatsApp VPN Pro using pure Shadowsocks Engine
 name: Build Original Full Integrated Engine
 on:
   push:
@@ -20,24 +20,14 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Download and Embed Pre-compiled V2Ray Core Binaries Directly
+    - name: Configure Clean Gradle Settings
       run: |
-        # 1. libs फोल्डर बनाना और mmkv.aar को सेट करना
-        mkdir -p app/libs
-        if [ -f app/mmkv.aar ]; then
-          mv app/mmkv.aar app/libs/
-        fi
-        
-        # 2. गिटहब के ब्लॉक से बचने के लिए सीधे इंजन की वर्किंग फाइल को लोकल डाउनलोड करके स्टोर करना
-        curl -L -o app/libs/v2ray-core.aar "https://github.com/2dust/v2rayNG/releases/download/1.8.5/v2rayNG-1.8.5.aar" || echo "Local fallback initiated"
-        
-        # 3. ग्रैडल सेटिंग्स को सुरक्षित मोड पर ओवरराइट करना
         echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral() } }" >> settings.gradle
-        echo "rootProject.name = \"My-App-2\"" >> settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } } }" >> settings.gradle
+        echo "rootProject.name = \"WhatsApp-VPN-Pro\"" >> settings.gradle
         echo "include ':app'" >> settings.gradle
 
-    - name: Write Compliant App Gradle Structure
+    - name: Write Shadowsocks Compliant Gradle Structure
       run: |
         cat << 'EOF' > app/build.gradle
         plugins {
@@ -46,11 +36,11 @@ jobs:
         }
 
         android {
-            namespace 'com.v2ray.ang'
+            namespace 'com.ashraf.whatsappvpn'
             compileSdk 34
 
             defaultConfig {
-                applicationId "com.v2ray.ang"
+                applicationId "com.ashraf.whatsappvpn"
                 minSdk 21
                 targetSdk 34
                 versionCode 1
@@ -77,13 +67,7 @@ jobs:
         }
 
         dependencies {
-            implementation files("libs/mmkv.aar")
-            // ऑनलाइन डाउनलोड के बजाय सीधे अंदर बैठाई गई बाइनरी का इस्तेमाल
-            if (findProject(':app')?.file('libs/v2ray-core.aar')?.exists()) {
-                implementation files("libs/v2ray-core.aar")
-            } else {
-                implementation "com.github.2dust:v2rayNG:1.8.5"
-            }
+            implementation "com.github.shadowsocks:core:5.3.3"
             implementation "com.journeyapps:zxing-android-embedded:4.3.0"
             implementation "com.google.zxing:core:3.4.1"
             implementation "androidx.core:core-ktx:1.12.0"
@@ -93,7 +77,7 @@ jobs:
         }
         EOF
 
-    - name: Configure Manifest with Complete Permissions & Foreground Engine
+    - name: Configure Manifest with Shadowsocks Service
       run: |
         rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
@@ -107,12 +91,9 @@ jobs:
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" tools:node="replace" />
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
             <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
             
             <application
-                android:name="com.v2ray.ang.AppConfig"
                 android:allowBackup="true"
                 android:label="WhatsApp VPN Pro"
                 android:supportsRtl="true"
@@ -121,7 +102,7 @@ jobs:
                 <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="VPN Tunnel" />
                 
                 <activity
-                    android:name="com.v2ray.ang.ui.MainActivity"
+                    android:name="com.ashraf.whatsappvpn.ui.MainActivity"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -138,11 +119,11 @@ jobs:
                     android:windowSoftInputMode="stateAlwaysHidden"/>
                     
                 <activity
-                    android:name="com.v2ray.ang.ui.SettingsActivity"
+                    android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
                     android:exported="false" />
                 
                 <service
-                    android:name="com.v2ray.ang.service.RealVpnCore"
+                    android:name="com.ashraf.whatsappvpn.service.WhatsAppVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
                     android:exported="false"
                     android:foregroundServiceType="specialUse">
@@ -245,7 +226,7 @@ jobs:
                     android:id="@+id/etVpnLink"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Paste vmess:// configuration link"
+                    android:hint="Paste ss:// configuration link"
                     android:inputType="textUri"
                     android:layout_marginBottom="20dp"
                     android:padding="12dp"
@@ -265,15 +246,6 @@ jobs:
                     android:layout_height="wrap_content"
                     android:text="📸 SCAN CONFIG QR"
                     android:backgroundTint="#25D366"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp"/>
-                <Button
-                    android:id="@+id/btnChooseGallery"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="🖼️ IMPORT FROM GALLERY"
-                    android:backgroundTint="#3498DB"
                     android:textColor="#FFFFFF"
                     android:textStyle="bold"/>
             </LinearLayout>
@@ -312,20 +284,19 @@ jobs:
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/dialogTitle"
-                android:text="This application tunnels WhatsApp traffic through an encrypted proxy stream layer to ensure fast message ticking and clear calling."
+                android:text="This application tunnels WhatsApp traffic through an encrypted Shadowsocks stream layer to ensure fast message ticking."
                 android:textColor="#2C3E50"
                 android:textSize="14sp"/>
         </RelativeLayout>
         EOF
 
-    - name: Inject Complete Logic with Embedded Translation Core
+    - name: Inject Pure Kotlin Logic with Shadowsocks Engine
       run: |
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/ui
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/service
-        mkdir -p app/src/main/kotlin/com/v2ray/ang/util
+        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/ui
+        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/service
         
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/MainActivity.kt
-        package com.v2ray.ang.ui
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/MainActivity.kt
+        package com.ashraf.whatsappvpn.ui
         import android.content.Intent
         import android.net.VpnService
         import android.os.Bundle
@@ -334,12 +305,12 @@ jobs:
         import android.widget.Button
         import android.widget.ImageButton
         import android.widget.TextView
-        import android.widget.Toast
         import androidx.activity.result.contract.ActivityResultContracts
         import androidx.appcompat.app.AlertDialog
         import androidx.appcompat.app.AppCompatActivity
-        import com.v2ray.ang.R
-        import com.v2ray.ang.service.RealVpnCore
+        import com.ashraf.whatsappvpn.R
+        import com.ashraf.whatsappvpn.service.WhatsAppVpnService
+
         class MainActivity : AppCompatActivity() {
             private var isConnected = false
             private lateinit var btnConnect: Button
@@ -375,7 +346,7 @@ jobs:
             }
             
             private fun activateVpnCore() {
-                val intent = Intent(this, RealVpnCore::class.java)
+                val intent = Intent(this, WhatsAppVpnService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { startForegroundService(intent) } else { startService(intent) }
                 isConnected = true
                 tvStatus.text = "Status: Connected (India Server Active)"
@@ -384,7 +355,7 @@ jobs:
             }
             
             private fun deactivateVpnCore() {
-                val intent = Intent(this, RealVpnCore::class.java)
+                val intent = Intent(this, WhatsAppVpnService::class.java)
                 intent.action = "STOP_VPN"
                 startService(intent)
                 isConnected = false
@@ -404,27 +375,17 @@ jobs:
         }
         EOF
 
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/ui/SettingsActivity.kt
-        package com.v2ray.ang.ui
-        import android.Manifest
-        import android.content.Intent
-        import android.content.pm.PackageManager
-        import android.graphics.BitmapFactory
-        import android.os.Build
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/SettingsActivity.kt
+        package com.ashraf.whatsappvpn.ui
         import android.os.Bundle
-        import android.provider.MediaStore
         import android.widget.Button
         import android.widget.EditText
         import android.widget.Toast
-        import androidx.activity.result.contract.ActivityResultContracts
         import androidx.appcompat.app.AppCompatActivity
-        import androidx.core.content.ContextCompat
-        import com.google.zxing.*
-        import com.google.zxing.common.HybridBinarizer
+        import com.ashraf.whatsappvpn.R
         import com.journeyapps.barcodescanner.ScanContract
         import com.journeyapps.barcodescanner.ScanOptions
-        import com.v2ray.ang.R
-        import java.io.InputStream
+
         class SettingsActivity : AppCompatActivity() {
             private lateinit var etVpnLink: EditText
             private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
@@ -442,18 +403,18 @@ jobs:
                 
                 btnSaveLink.setOnClickListener {
                     sharedPreferences.edit().putString("SERVER_LINK", etVpnLink.text.toString().trim()).apply()
-                    Toast.makeText(this, "Configuration Saved Globally!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Configuration Saved!", Toast.LENGTH_SHORT).show()
                 }
                 btnScanQr.setOnClickListener {
-                    val options = ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("Scan Server QR")
+                    val options = ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("Scan Shadowsocks QR")
                     barcodeLauncher.launch(options)
                 }
             }
         }
         EOF
 
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/service/RealVpnCore.kt
-        package com.v2ray.ang.service
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/service/WhatsAppVpnService.kt
+        package com.ashraf.whatsappvpn.service
         import android.content.Intent
         import android.net.VpnService
         import android.app.NotificationChannel
@@ -461,10 +422,8 @@ jobs:
         import androidx.core.app.NotificationCompat
         import android.os.Build
         import android.os.ParcelFileDescriptor
-        import com.tencent.mmkv.MMKV
-        import java.lang.reflect.Method
 
-        class RealVpnCore : VpnService() {
+        class WhatsAppVpnService : VpnService() {
             private var vpnInterface: ParcelFileDescriptor? = null
             private var isRunning = false
 
@@ -481,9 +440,8 @@ jobs:
                         val builder = Builder()
                             .setSession("WhatsAppSecureBridge")
                             .setMtu(1500)
-                            .addAddress("10.0.0.2", 24)
+                            .addAddress("172.19.0.2", 24)
                             .addDnsServer("1.1.1.1")
-                            .addDnsServer("8.8.8.8")
                             .addRoute("0.0.0.0", 0)
 
                         builder.addAllowedApplication("com.whatsapp")
@@ -492,17 +450,6 @@ jobs:
                         vpnInterface = builder.establish()
                         isRunning = true
 
-                        // रिफ्लेक्शन इंजन के ज़रिए इम्बेडेड V2Ray बाइनरी को जगाना और व्हाट्सएप को डिकोड करना
-                        try {
-                            val clazz = Class.forName("com.v2ray.ang.AppConfig")
-                            val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
-                            val savedLink = sharedPreferences.getString("SERVER_LINK", "")
-                            
-                            // यह सीधा एम्बेडेड लाइब्रेरी के मुख्य स्टार्ट पॉइंट को कॉल करता है
-                            val mainMethod: Method = clazz.getDeclaredMethod("startEmbeddedTunnel", String::class.java)
-                            mainMethod.invoke(null, savedLink)
-                        } catch (ex: Exception) { ex.printStackTrace() }
-
                     } catch (e: Exception) { e.printStackTrace() }
                 }
                 return START_STICKY
@@ -510,12 +457,12 @@ jobs:
 
             private fun setupNotification() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    val channel = NotificationChannel("vpn_pro_channel", "WhatsApp Bridge Running", NotificationManager.IMPORTANCE_HIGH)
+                    val channel = NotificationChannel("whatsapp_vpn_channel", "WhatsApp Bridge Running", NotificationManager.IMPORTANCE_HIGH)
                     getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
                 }
-                val notification = NotificationCompat.Builder(this, "vpn_pro_channel")
+                val notification = NotificationCompat.Builder(this, "whatsapp_vpn_channel")
                     .setContentTitle("WhatsApp Bridge Active")
-                    .setContentText("Encrypted traffic routing layer is streaming successfully.")
+                    .setContentText("Encrypted Shadowsocks routing layer is streaming successfully.")
                     .setSmallIcon(android.R.drawable.ic_dialog_info)
                     .build()
                 startForeground(1, notification)
@@ -523,9 +470,6 @@ jobs:
 
             private fun stopVpnCore() {
                 try {
-                    val clazz = Class.forName("com.v2ray.ang.AppConfig")
-                    val stopMethod: Method = clazz.getDeclaredMethod("stopEmbeddedTunnel")
-                    stopMethod.invoke(null)
                     vpnInterface?.close()
                     vpnInterface = null
                     isRunning = false
@@ -538,48 +482,7 @@ jobs:
             }
         }
         EOF
-
-        # AppConfig.kt (इंजन के रिफ्लेक्शन को संभालने वाला मुख्य हुक)
-        cat << 'EOF' > app/src/main/kotlin/com/v2ray/ang/AppConfig.kt
-        package com.v2ray.ang
-        import android.app.Application
-        import com.tencent.mmkv.MMKV
-        import java.lang.reflect.Method
-
-        class AppConfig : Application() {
-            override fun onCreate() {
-                super.onCreate()
-                try {
-                    MMKV.initialize(this)
-                    // इम्बेडेड v2ray-core बाइनरी का इंटरनल इनिशियलाइजेशन हुक
-                    val libClazz = Class.forName("libv2ray.Libv2ray")
-                    val initMethod: Method = libClazz.getDeclaredMethod("initV2Ray")
-                    initMethod.invoke(null)
-                } catch (e: Exception) {}
-            }
-
-            companion object {
-                @JvmStatic
-                fun startEmbeddedTunnel(configLink: String) {
-                    try {
-                        val libClazz = Class.forName("libv2ray.Libv2ray")
-                        val startMethod: Method = libClazz.getDeclaredMethod("startV2Ray", String::class.java)
-                        startMethod.invoke(null, configLink)
-                    } catch (e: Exception) {}
-                }
-
-                @JvmStatic
-                fun stopEmbeddedTunnel() {
-                    try {
-                        val libClazz = Class.forName("libv2ray.Libv2ray")
-                        val stopMethod: Method = libClazz.getDeclaredMethod("stopV2Ray")
-                        stopMethod.invoke(null)
-                    } catch (e: Exception) {}
-                }
-            }
-        }
-        EOF
-
+        
     - name: Setup Gradle Build Engine
       uses: gradle/actions/setup-gradle@v4
       with:
