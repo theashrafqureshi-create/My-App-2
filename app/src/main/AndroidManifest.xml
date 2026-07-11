@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.google.com/tools">
 
     <!-- इंटरनेट और नेटवर्क स्टेट की परमिशन -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -16,7 +16,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         tools:targetApi="34">
-        
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">
@@ -26,15 +26,16 @@
             </intent-filter>
         </activity>
 
-        <!-- बैकग्राउंड में शैडोसॉक्स वीपीएन चालू रखने के लिए मुख्य सर्विस -->
-        <service
-            android:name=".service.ShadowsocksManager"
-            android:exported="false"
-            android:permission="android.permission.BIND_VPN_SERVICE">
+        <!-- हमारी नई मैन्युअल Shadowsocks VPN Service -->
+        <service 
+            android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
+            android:permission="android.permission.BIND_VPN_SERVICE"
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
         </service>
+
     </application>
 
 </manifest>
