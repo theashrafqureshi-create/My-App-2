@@ -283,6 +283,7 @@ jobs:
         import android.content.Intent
         import android.net.VpnService
         import android.os.Bundle
+        import android.os.Build
         import android.view.LayoutInflater
         import android.widget.Button
         import android.widget.ImageButton
@@ -346,7 +347,12 @@ jobs:
             
             private fun activateVpnCore() {
                 try {
-                    startService(Intent(this, RealVpnCore::class.java))
+                    val intent = Intent(this, RealVpnCore::class.java)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        startForegroundService(intent)
+                    } else {
+                        startService(intent)
+                    }
                     isConnected = true
                     tvStatus.text = "Status: Connected (Tunnel Active)"
                     tvStatus.setTextColor(android.graphics.Color.parseColor("#25D366"))
