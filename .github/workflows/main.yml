@@ -28,15 +28,31 @@ jobs:
           mv app/mmkv.aar app/libs/
         fi
         
-        # 2. ग्रैडल रिपॉजिटरी बेस को सिंक से पहले अपडेट करना
+        # 2. ग्रैडल रिपॉजिटरी बेस को सुरक्षित तरीके से अपडेट करना (बिना sed सिंटैक्स एरर के)
         if [ -f settings.gradle ]; then
-          sed -i 's/google()/google()\n        mavenCentral()\n        maven { url "https://jitpack.io" }/g' settings.gradle
-        fi
-        if [ -f build.gradle ]; then
-          sed -i 's/google()/google()\n        mavenCentral()\n        maven { url "https://jitpack.io" }/g' build.gradle
+          cat << 'EOF' > temp_settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url "https://jitpack.io" }
+              }
+          }
+          rootProject.name = "My-App-2"
+          include ':app'
+          EOF
+          mv temp_settings.gradle settings.gradle
         fi
         
-        # 3. ऑनलाइन डिपेंडेंसी क्लीनिंग और असली V2Ray Core इंजन का सुरक्षित इन्जेक्शन
+        # 3. ऑनलाइन डिपेंडेंसी क्लीनिंग और असली V2Ray Core इंजन का इन्जेक्शन
         if [ -f app/build.gradle ]; then
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
@@ -173,7 +189,7 @@ jobs:
         EOF
         # activity_settings.xml
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        <?xml version="1.0" encoding="utf-8"?>
+        xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
