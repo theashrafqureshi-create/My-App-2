@@ -28,29 +28,11 @@ jobs:
           mv app/mmkv.aar app/libs/
         fi
         
-        # 2. ग्रैडल रिपॉजिटरी बेस को सुरक्षित तरीके से अपडेट करना (बिना sed सिंटैक्स एरर के)
-        if [ -f settings.gradle ]; then
-          cat << 'EOF' > temp_settings.gradle
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-                  maven { url "https://jitpack.io" }
-              }
-          }
-          rootProject.name = "My-App-2"
-          include ':app'
-          EOF
-          mv temp_settings.gradle settings.gradle
-        fi
+        # 2. ग्रैडल रिपॉजिटरी बेस को सुरक्षित तरीके से ओवरराइट करना
+        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
+        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral(); maven { url \"https://jitpack.io\" } } }" >> settings.gradle
+        echo "rootProject.name = \"My-App-2\"" >> settings.gradle
+        echo "include ':app'" >> settings.gradle
         
         # 3. ऑनलाइन डिपेंडेंसी क्लीनिंग और असली V2Ray Core इंजन का इन्जेक्शन
         if [ -f app/build.gradle ]; then
@@ -189,7 +171,7 @@ jobs:
         EOF
         # activity_settings.xml
         cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        xml version="1.0" encoding="utf-8"?>
+        <?xml version="1.0" encoding="utf-8"?>
         <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -580,7 +562,6 @@ jobs:
                         if (!savedLink.isNullOrEmpty()) {
                             AngConfigManager.importConfig(this, savedLink)
                             
-                            // इंजेक्टेड V2Ray Core इंजन को तुम्हारी लिंक के साथ लाइव शुरू करना
                             Libv2ray.initV2Ray()
                             Libv2ray.startV2Ray(this, savedLink)
                         }
