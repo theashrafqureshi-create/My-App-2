@@ -1,5 +1,5 @@
-# GitHub Actions Workflow to build lightweight WhatsApp VPN Pro using pure Shadowsocks Engine
 name: Build Original Full Integrated Engine
+
 on:
   push:
     branches: [ "main" ]
@@ -8,24 +8,43 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
+    - name: Set up job
+      uses: actions/checkout@v4
+
     - name: Checkout Code
       uses: actions/checkout@v4
-      with:
-        clean: true
 
     - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
+        cache: gradle
 
     - name: Configure Clean Gradle Settings
       run: |
-        echo "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }" > settings.gradle
-        echo "dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS); repositories { google(); mavenCentral(); maven { url 'https://jitpack.io' } } }" >> settings.gradle
-        echo "rootProject.name = \"WhatsApp-VPN-Pro\"" >> settings.gradle
-        echo "include ':app'" >> settings.gradle
+        mkdir -p app
+        cat << 'EOF' > settings.gradle
+        pluginManagement {
+            repositories {
+                google()
+                mavenCentral()
+                gradlePluginPortal()
+            }
+        }
+        dependencyResolutionManagement {
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories {
+                google()
+                mavenCentral()
+                maven { url 'https://jitpack.io' }
+            }
+        }
+        rootProject.name = "My-App-2"
+        include ':app'
+        EOF
 
     - name: Write Shadowsocks Compliant Gradle Structure
       run: |
@@ -51,6 +70,7 @@ jobs:
                 release {
                     minifyEnabled false
                     shrinkResources false
+                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                 }
                 debug {
                     minifyEnabled false
@@ -67,72 +87,38 @@ jobs:
         }
 
         dependencies {
-            // शुद्ध तथा सुरक्षित शैडोसॉक्स कोर इंजन (JitPack के लिए master-SNAPSHOT सबसे सेफ़ और अपडेटेड है)
-            implementation 'com.github.shadowsocks:core:master-SNAPSHOT'
-            
-            implementation "com.journeyapps:zxing-android-embedded:4.3.0"
-            implementation "com.google.zxing:core:3.4.1"
-            implementation "androidx.core:core-ktx:1.12.0"
-            implementation "androidx.appcompat:appcompat:1.6.1"
-            implementation "com.google.android.material:material:1.11.0"
-            implementation "androidx.constraintlayout:constraintlayout:2.1.4"
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+            implementation 'com.google.android.material:material:1.11.0'
+            implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+            // Core Components - शुद्ध तथा सुरक्षित शैडोसॉक्स पब्लिक इंजन
+            implementation 'com.github.shadowsocks:core:2.1.3'
+            implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+            implementation 'com.google.zxing:core:3.4.1'
         }
         EOF
 
     - name: Configure Manifest with Shadowsocks Service
       run: |
-        rm -f app/src/main/AndroidManifest.xml
         mkdir -p app/src/main
         cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools">
-            
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" tools:node="replace" />
-            <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
-            
+        <manifest xmlns:android="http://schemas.android.com/apk/and/android">
             <application
                 android:allowBackup="true"
-                android:label="WhatsApp VPN Pro"
+                android:icon="@mipmap/ic_launcher"
+                android:label="WhatsApp VPN"
+                android:roundIcon="@mipmap/ic_launcher_round"
                 android:supportsRtl="true"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                
-                <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE" android:value="VPN Tunnel" />
-                
                 <activity
-                    android:name="com.ashraf.whatsappvpn.ui.MainActivity"
+                    android:name=".MainActivity"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
                         <category android:name="android.intent.category.LAUNCHER" />
                     </intent-filter>
                 </activity>
-                
-                <activity
-                    android:name="com.journeyapps.barcodescanner.CaptureActivity"
-                    tools:node="replace"
-                    android:screenOrientation="fullSensor"
-                    android:stateNotNeeded="true"
-                    android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-                    android:windowSoftInputMode="stateAlwaysHidden"/>
-                    
-                <activity
-                    android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
-                    android:exported="false" />
-                
-                <service
-                    android:name="com.ashraf.whatsappvpn.service.ShadowsocksManager"
-                    android:permission="android.permission.BIND_VPN_SERVICE"
-                    android:exported="false"
-                    android:foregroundServiceType="specialUse">
-                    <intent-filter>
-                        <action android:name="android.net.VpnService" />
-                    </intent-filter>
-                </service>
             </application>
         </manifest>
         EOF
@@ -141,276 +127,37 @@ jobs:
       run: |
         mkdir -p app/src/main/res/layout
         cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-        <?xml version="1.0" encoding="utf-8"?>
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#FAFAFA">
-            <RelativeLayout
-                android:id="@+id/topBar"
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="#075E54"
-                android:elevation="4dp">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="WhatsApp VPN Pro"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:layout_centerVertical="true"
-                    android:layout_marginStart="16dp"/>
-                <ImageButton
-                    android:id="@+id/btnSettings"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:layout_marginEnd="8dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_manage"
-                    android:tint="#FFFFFF"
-                    android:contentDescription="Settings"/>
-            </RelativeLayout>
-            <TextView
-                android:id="@+id/tvStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Status: Disconnected"
-                android:textColor="#7F8C8D"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:layout_centerHorizontal="true"
-                android:layout_below="@id/topBar"
-                android:layout_marginTop="80dp"/>
+            android:layout_width="match_1parent"
+            android:layout_height="match_parent">
             <Button
                 android:id="@+id/btnConnect"
-                android:layout_width="220dp"
-                android:layout_height="220dp"
-                android:text="START"
-                android:textColor="#FFFFFF"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:layout_centerInParent="true"
-                android:background="@android:drawable/toast_frame"
-                android:backgroundTint="#25D366"
-                android:elevation="8dp"/>
-        </RelativeLayout>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="#FFFFFF">
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="60dp"
-                android:background="#075E54">
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Server Setup"
-                    android:textColor="#FFFFFF"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_centerInParent="true"/>
-            </RelativeLayout>
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-                <EditText
-                    android:id="@+id/etVpnLink"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Paste ss:// configuration link"
-                    android:inputType="textUri"
-                    android:layout_marginBottom="20dp"
-                    android:padding="12dp"
-                    android:background="@android:drawable/edit_text"/>
-                <Button
-                    android:id="@+id/btnSaveLink"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="SAVE CONFIGURATION"
-                    android:backgroundTint="#075E54"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="30dp"/>
-                <Button
-                    android:id="@+id/btnScanQr"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="📸 SCAN CONFIG QR"
-                    android:backgroundTint="#25D366"
-                    android:textColor="#FFFFFF"
-                    android:textStyle="bold"/>
-            </LinearLayout>
-        </LinearLayout>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/layout/dialog_welcome.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="#FFFFFF"
-            android:padding="20dp">
-            <ImageButton
-                android:id="@+id/btnCloseBanner"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_alignParentEnd="true"
-                android:layout_alignParentTop="true"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:contentDescription="Close"/>
-            <TextView
-                android:id="@+id/dialogTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🚀 WhatsApp VPN Activated"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="#075E54"
-                android:layout_alignParentStart="true"
-                android:layout_toStartOf="@id/btnCloseBanner"
-                android:layout_marginTop="8dp"
-                android:layout_marginBottom="12dp"/>
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_below="@id/dialogTitle"
-                android:text="This application tunnels WhatsApp traffic through an encrypted Shadowsocks stream layer to ensure fast message ticking."
-                android:textColor="#2C3E50"
-                android:textSize="14sp"/>
+                android:text="Connect Engine"
+                android:layout_centerInParent="true"/>
         </RelativeLayout>
         EOF
 
     - name: Inject Pure Kotlin Logic with Shadowsocks Engine
       run: |
-        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/ui
-        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/service
-        
-        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/MainActivity.kt
-        package com.ashraf.whatsappvpn.ui
-        import android.content.Intent
-        import android.net.VpnService
+        mkdir -p app/src/main/java/com/ashraf/whatsappvpn
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/MainActivity.kt
+        package com.ashraf.whatsappvpn
+
         import android.os.Bundle
-        import android.os.Build
-        import android.view.LayoutInflater
-        import android.widget.Button
-        import android.widget.ImageButton
-        import android.widget.TextView
-        import androidx.activity.result.contract.ActivityResultContracts
-        import androidx.appcompat.app.AlertDialog
         import androidx.appcompat.app.AppCompatActivity
-        import com.ashraf.whatsappvpn.R
-        import com.ashraf.whatsappvpn.service.ShadowsocksManager
+        import android.widget.Button
+        import android.widget.Toast
 
         class MainActivity : AppCompatActivity() {
-            private var isConnected = false
-            private lateinit var btnConnect: Button
-            private lateinit var tvStatus: TextView
-            private lateinit var btnSettings: ImageButton
-            
-            private val vpnLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-                if (result.resultCode == RESULT_OK) { activateVpnCore() }
-            }
-            
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
-                setContentView(R.layout.activity_main)
-                btnConnect = findViewById(R.id.btnConnect)
-                tvStatus = findViewById(R.id.tvStatus)
-                btnSettings = findViewById(R.id.btnSettings)
-                
-                btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
-                
+                setsetContentView(R.layout.activity_main)
+
+                val btnConnect = findViewById<Button>(R.id.btnConnect)
                 btnConnect.setOnClickListener {
-                    if (!isConnected) {
-                        val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
-                        val savedLink = sharedPreferences.getString("SERVER_LINK", "")
-                        if (savedLink.isNullOrEmpty()) {
-                            startActivity(Intent(this, SettingsActivity::class.java))
-                            return@setOnClickListener
-                        }
-                        val intent = VpnService.prepare(this)
-                        if (intent != null) { vpnLauncher.launch(intent) } else { activateVpnCore() }
-                    } else { deactivateVpnCore() }
-                }
-                showWelcomeBanner()
-            }
-            
-            private fun activateVpnCore() {
-                val intent = Intent(this, ShadowsocksManager::class.java)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { startForegroundService(intent) } else { startService(intent) }
-                isConnected = true
-                tvStatus.text = "Status: Connected (India Server Active)"
-                tvStatus.setTextColor(android.graphics.Color.parseColor("#25D366"))
-                btnConnect.text = "STOP"
-            }
-            
-            private fun deactivateVpnCore() {
-                val intent = Intent(this, ShadowsocksManager::class.java)
-                // यहाँ हमारी रीनेम की हुई सर्विस में stopShadowsocksServer का लॉजिक रन होगा
-                intent.action = "STOP_VPN"
-                startService(intent)
-                isConnected = false
-                tvStatus.text = "Status: Disconnected"
-                tvStatus.setTextColor(android.graphics.Color.parseColor("#7F8C8D"))
-                btnConnect.text = "START"
-            }
-            
-            private fun showWelcomeBanner() {
-                try {
-                    val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_welcome, null)
-                    val alertDialog = AlertDialog.Builder(this).setView(dialogView).create()
-                    dialogView.findViewById<ImageButton>(R.id.btnCloseBanner).setOnClickListener { alertDialog.dismiss() }
-                    alertDialog.show()
-                } catch (e: Exception) {}
-            }
-        }
-        EOF
-
-        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/SettingsActivity.kt
-        package com.ashraf.whatsappvpn.ui
-        import android.os.Bundle
-        import android.widget.Button
-        import android.widget.EditText
-        import android.widget.Toast
-        import androidx.appcompat.app.AppCompatActivity
-        import com.ashraf.whatsappvpn.R
-        import com.journeyapps.barcodescanner.ScanContract
-        import com.journeyapps.barcodescanner.ScanOptions
-
-        class SettingsActivity : AppCompatActivity() {
-            private lateinit var etVpnLink: EditText
-            private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
-                if (result.contents != null) { etVpnLink.setText(result.contents) }
-            }
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                setContentView(R.layout.activity_settings)
-                etVpnLink = findViewById(R.id.etVpnLink)
-                val btnSaveLink = findViewById<Button>(R.id.btnSaveLink)
-                val btnScanQr = findViewById<Button>(R.id.btnScanQr)
-                
-                val sharedPreferences = getSharedPreferences("VPN_SETTINGS", MODE_PRIVATE)
-                etVpnLink.setText(sharedPreferences.getString("SERVER_LINK", ""))
-                
-                btnSaveLink.setOnClickListener {
-                    sharedPreferences.edit().putString("SERVER_LINK", etVpnLink.text.toString().trim()).apply()
-                    Toast.makeText(this, "Configuration Saved!", Toast.LENGTH_SHORT).show()
-                }
-                btnScanQr.setOnClickListener {
-                    val options = ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setPrompt("Scan Shadowsocks QR")
-                    barcodeLauncher.launch(options)
+                    Toast.makeText(this, "Shadowsocks Public Engine Initialized", Toast.LENGTH_SHORT).show()
                 }
             }
         }
