@@ -109,12 +109,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService.class)
+        // 🎯 [FIXED] कोट्लिन के लिए सही सिंटैक्स
+        val intent = Intent(this, ShadowsocksVpnService::class.java)
         ContextCompat.startForegroundService(this, intent)
     }
 
     private fun stopVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService.class)
+        // 🎯 [FIXED] कोट्लिन के लिए सही सिंटैक्स
+        val intent = Intent(this, ShadowsocksVpnService::class.java)
         // 🎯 सर्विस को साफ़-साफ़ बंद होने का एक्शन भेजना
         intent.action = "STOP_VPN"
         stopService(intent)
