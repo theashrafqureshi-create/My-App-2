@@ -132,6 +132,14 @@ jobs:
                     android:name=".ui.SettingsActivity"
                     android:exported="false" />
 
+                <!-- स्कैनर इंजन एक्टिविटी रजिस्टर की गई -->
+                <activity
+                    android:name="com.journeyapps.barcodescanner.CaptureActivity"
+                    android:screenOrientation="fullSensor"
+                    android:tools:replace="screenOrientation"
+                    android:theme="@style/zxing_CaptureTheme"
+                    android:exported="false" />
+
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
@@ -459,7 +467,6 @@ jobs:
                     greetingBanner.visibility = View.GONE
                 }
 
-                // सेटिंग्स आइकॉन पर क्लिक करने से नया पेज खुलता है
                 btnSettings.setOnClickListener {
                     val intent = Intent(this, SettingsActivity::class.java)
                     startActivity(intent)
@@ -515,7 +522,7 @@ jobs:
         }
         EOF
 
-    - name: Inject Settings Integration Controller Layer
+    - name: Inject Settings Integration Controller Layer with Live ZXing Camera
       run: |
         cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/ui/SettingsActivity.kt
         package com.ashraf.whatsappvpn.ui
@@ -534,8 +541,22 @@ jobs:
         import androidx.core.app.ActivityCompat
         import androidx.core.content.ContextCompat
         import com.ashraf.whatsappvpn.R
+        import com.journeyapps.barcodescanner.ScanContract
+        import com.journeyapps.barcodescanner.ScanOptions
 
         class SettingsActivity : AppCompatActivity() {
+
+            // ZXing स्मार्ट कैमरा स्कैनर लॉन्चर इंजन
+            private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
+                if (result.contents == null) {
+                    Toast.makeText(this, "Cancelled Scanner", Toast.LENGTH_SHORT).show()
+                } else {
+                    val scannedData = result.contents
+                    val etVpnLink = findViewById<EditText>(R.id.etVpnLink)
+                    etVpnLink.setText(scannedData)
+                    Toast.makeText(this, "Scanned Configuration Loaded Successfully!", Toast.LENGTH_LONG).show()
+                }
+            }
 
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
@@ -548,7 +569,7 @@ jobs:
                 val btnOpenGallery = findViewById<Button>(R.id.btnOpenGallery)
 
                 btnBack.setOnClickListener {
-                    finish() // वापस मेन स्क्रीन पर जाने के लिए
+                    finish()
                 }
 
                 btnSaveLink.setOnClickListener {
@@ -560,16 +581,15 @@ jobs:
                     }
                 }
 
-                // कैमरा स्कैनर दबाने पर परमिशन मांगना
+                // लाइव स्कैनर लॉन्चर एक्शन (कैमरा ओपन फिक्स)
                 btnOpenScanner.setOnClickListener {
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 101)
                     } else {
-                        Toast.makeText(this, "Camera Permission Active. Launching Scanner Engine...", Toast.LENGTH_SHORT).show()
+                        startQrCameraEngine()
                     }
                 }
 
-                // गैलरी बटन दबाने पर परमिशन मांगना
                 btnOpenGallery.setOnClickListener {
                     val storagePermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         Manifest.permission.READ_MEDIA_IMAGES
@@ -586,18 +606,29 @@ jobs:
                 }
             }
 
+            private fun startQrCameraEngine() {
+                val options = ScanOptions().apply {
+                    setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    setPrompt("Align Shadowsocks QR Code inside the box to Scan")
+                    setCameraId(0) // रियर कैमरा चालू करने के लिए
+                    setBeepEnabled(true)
+                    setBarcodeImageEnabled(true)
+                    setOrientationLocked(false)
+                }
+                barcodeLauncher.launch(options)
+            }
+
             override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
                 super.onRequestPermissionsResult(requestCode, permissions, grantResults)
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     if (requestCode == 101) {
-                        Toast.makeText(this, "Camera Permission Granted!", Toast.LENGTH_SHORT).show()
+                        startQrCameraEngine()
                     } else if (requestCode == 102) {
-                        Toast.makeText(this, "Gallery Permission Granted!", Toast.LENGTH_SHORT).show()
                         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
                         startActivityForResult(intent, 103)
                     }
                 } else {
-                    Toast.makeText(this, "Permission Denied by User!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show()
                 }
             }
 
@@ -606,6 +637,64 @@ jobs:
                 if (resultCode == RESULT_OK && requestCode == 103) {
                     Toast.makeText(this, "Screenshot Selected! Processing QR Barcode Content...", Toast.LENGTH_LONG).show()
                 }
+            }
+        }
+        EOF
+
+    - name: Inject Destructive Intent Engine over Shadowsocks Core Service
+      run: |
+        mkdir -p app/src/main/java/com/ashraf/whatsappvpn/service
+        cat << 'EOF' > app/src/main/java/com/ashraf/whatsappvpn/service/ShadowsocksVpnService.kt
+        package com.ashraf.whatsappvpn.service
+
+        import android.content.Intent
+        import android.net.VpnService
+        import android.os.ParcelFileDescriptor
+
+        class ShadowsocksVpnService : VpnService() {
+
+            private var vpnInterface: ParcelFileDescriptor? = null
+
+            override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+                val action = intent?.action
+                if ("START" == action) {
+                    establishVpnTunnel()
+                } else if ("STOP" == action) {
+                    destroyVpnTunnel()
+                }
+                return START_NOT_STICKY
+            }
+
+            private fun establishVpnTunnel() {
+                try {
+                    if (vpnInterface == null) {
+                        val builder = Builder()
+                        builder.setSession("WhatsApp VPN Tunnel")
+                        builder.addAddress("10.0.0.2", 24)
+                        builder.addDnsServer("8.8.8.8")
+                        builder.addRoute("0.0.0.0", 0)
+                        vpnInterface = builder.establish()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            // चाबी हमेशा के लिए हटाने का तगड़ा फिक्स
+            private fun destroyVpnTunnel() {
+                try {
+                    vpnInterface?.close()
+                    vpnInterface = null
+                    stopForeground(true)
+                    stopSelf()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            override fun onDestroy() {
+                destroyVpnTunnel()
+                super.onDestroy()
             }
         }
         EOF
