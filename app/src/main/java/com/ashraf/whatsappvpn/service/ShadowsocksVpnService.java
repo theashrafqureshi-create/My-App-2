@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo; // 🎯 [NEW] Android 14 सर्विस टाइप के लिए यह इम्पोर्ट ज़रूरी था
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
@@ -25,7 +26,7 @@ public class ShadowsocksVpnService extends VpnService {
         Log.d(TAG, "VPN Service Started Manually");
         stopVpn();
 
-        // 🎯 Android 14 क्रैश फिक्स: सबसे पहले प्योर एंड्रॉइड का नोटिफिकेशन चैनल बनाना
+        // Android 14 क्रैश फिक्स: प्योर एंड्रॉइड का नोटिफिकेशन चैनल बनाना
         createNotificationChannel();
         
         Notification notification;
@@ -44,8 +45,12 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 सिस्टम को बताना कि यह connectedDevice (VPN) टाइप सर्विस है
-        startForeground(1, notification);
+        // 🎯 [FIXED] Android 14 क्रैश का अचूक इलाज: मैनिफेस्ट के साथ मैच करने के लिए यहाँ FOREGROUND_SERVICE_TYPE_VPN देना अनिवार्य है
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
+        } else {
+            startForeground(1, notification);
+        }
 
         // SharedPreferences से लिंक पढ़ना
         SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
