@@ -1,19 +1,38 @@
 package com.ashraf.whatsappvpn.ui
 
+import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.widget.Button
 import android.widget.RelativeLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.ashraf.whatsappvpn.R
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService
 
 class MainActivity : AppCompatActivity() {
 
     private var isConnected = false
+
+    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉचर (पुराने onActivityResult का क्रैश-प्रूफ रिप्लेसमेंट)
+    private val vpnPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // 🎯 सिस्टम विंडो पूरी तरह साफ होने के लिए 200ms का सेफ डिले ताकि Android 14 ऐप को किल न करे
+            Handler(Looper.getMainLooper()).postDelayed({
+                handleVpnConnectionSuccess()
+            }, 200)
+        } else {
+            Toast.makeText(this, "VPN Permission Denied!", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,10 +60,10 @@ class MainActivity : AppCompatActivity() {
                 // सुरक्षित तरीके से वीपीएन परमिशन की जांच
                 val intent = VpnService.prepare(this)
                 if (intent != null) {
-                    // अगर परमिशन नहीं है, तो सिस्टम डायलॉग दिखाओ
-                    startActivityForResult(intent, 0)
+                    // अगर परमिशन नहीं है, तो नए लॉन्चर से डायलॉग खोलो
+                    vpnPermissionLauncher.launch(intent)
                 } else {
-                    // अगर परमिशन पहले से मिली हुई है, तो सीधे सेफ तरीके से चालू करो
+                    // अगर परमिशन पहले से मिली हुई है, तो सीधे चालू करो
                     handleVpnConnectionSuccess()
                 }
             } else {
@@ -73,26 +92,14 @@ class MainActivity : AppCompatActivity() {
         isConnected = false
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 0 && resultCode == RESULT_OK) {
-            handleVpnConnectionSuccess()
-        } else {
-            Toast.makeText(this, "VPN Permission Denied!", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     private fun startVpnService() {
         val intent = Intent(this, ShadowsocksVpnService::class.java)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
+        // 🎯 Android 14 फ़ोरग्राउंड सर्विस को ContextCompat से ही स्टार्ट करना सबसे सेफ होता है
+        ContextCompat.startForegroundService(this, intent)
     }
 
     private fun stopVpnService() {
         val intent = Intent(this, ShadowsocksVpnService::class.java)
-        stopService(intent) // ओएस को डायरेक्ट सर्विस स्टॉप कमांड (क्रैश प्रूफ)
+        stopService(intent) // ओएस को डायरेक्ट सर्विस स्टॉप कमांड
     }
 }
