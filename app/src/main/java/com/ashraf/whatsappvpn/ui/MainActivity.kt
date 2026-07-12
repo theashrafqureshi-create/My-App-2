@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log // 🎯 यह इम्पोर्ट गायब था, जिसकी वजह से बिल्ड फेल हुआ
 import android.view.View
 import android.widget.Button
 import android.widget.RelativeLayout
@@ -60,7 +61,6 @@ class MainActivity : AppCompatActivity() {
 
         // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
         btnSettings.setOnClickListener {
-            // नोट: अगर SettingsActivity अलग पैकेज में है तो इम्पोर्ट चेक करें
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
