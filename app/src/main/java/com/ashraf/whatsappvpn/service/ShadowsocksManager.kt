@@ -1,56 +1,56 @@
 package com.ashraf.whatsappvpn.service
 
-import android.content.Context
+import android.content.Intent
+import android.net.VpnService
+import android.os.ParcelFileDescriptor
 
-// कंपाइलर जो 'Profile' ढूंढ रहा था, उसे यहाँ साफ़-सुथरा डिफाइन कर दिया
-class Profile {
-    var name: String = "WhatsApp VPN Secure"
-    var host: String = "127.0.0.1"
-    var remotePort: Int = 8388
-    var password: String = "your_password"
-    var method: String = "aes-256-gcm"
-}
+class ShadowsocksVpnService : VpnService() {
 
-// कंपाइलर का 'ProfileManager' का एरर खत्म करने के लिए ऑब्जेक्ट
-object ProfileManager {
-    private val profile = Profile()
-    fun clear() {}
-    fun createProfile(p: Profile) {}
-    fun getProfile(): Profile = profile
-}
+    private var vpnInterface: ParcelFileDescriptor? = null
 
-// कंपाइलer का 'Core' वाला एरर खत्म करने के लिए इंजन कंट्रोलर
-object Core {
-    fun startService() {}
-    fun stopService() {}
-}
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val action = intent?.action
+        if ("START" == action) {
+            establishVpnTunnel()
+        } else if ("STOP" == action) {
+            destroyVpnTunnel()
+        }
+        return START_NOT_STICKY
+    }
 
-// तुम्हारी मुख्य मैनेजर क्लास जो तुम्हारा असली वीपीएन डेटा सप्लाई करेगी
-object ShadowsocksManager {
-
-    fun startShadowsocksServer(context: Context) {
+    private fun establishVpnTunnel() {
         try {
-            val profile = ProfileManager.getProfile()
-            // यहाँ तुम्हारा वीपीएन का मुख्य डेटा बिल्कुल सुरक्षित है
-            profile.name = "WhatsApp VPN Secure"
-            profile.host = "127.0.0.1"
-            profile.remotePort = 8388
-            profile.password = "your_password"
-            profile.method = "aes-256-gcm"
-
-            ProfileManager.clear()
-            ProfileManager.createProfile(profile)
-            Core.startService()
+            if (vpnInterface == null) {
+                val builder = Builder()
+                builder.setSession("WhatsApp VPN Tunnel")
+                builder.addAddress("10.0.0.2", 24)
+                builder.addDnsServer("8.8.8.8")
+                builder.addRoute("0.0.0.0", 0)
+                vpnInterface = builder.establish()
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun stopShadowsocksServer(context: Context) {
+    private fun destroyVpnTunnel() {
         try {
-            Core.stopService()
+            // 1. इंटरफ़ेस क्लोज किया
+            vpnInterface?.close()
+            vpnInterface = null
+            
+            // 2. फ़ोरग्राउंड नोटिफिकेशन हटाया
+            stopForeground(true)
+            
+            // 3. सर्विस को रैम से पूरी तरह हार्ड-किल किया (ताकि चाबी गायब हो जाए)
+            stopSelf()
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    override fun onDestroy() {
+        destroyVpnTunnel()
+        super.onDestroy()
     }
 }
