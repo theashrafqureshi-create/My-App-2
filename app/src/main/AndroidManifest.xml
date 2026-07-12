@@ -6,9 +6,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
     
-    <!-- 🎯 Android 13/14 फ़ोरग्राउंड सर्विस क्रैश को रोकने के लिए सबसे ज़रूरी परमिशन -->
+    <!-- Android 14 वीपीएन फ़ोरग्राउंड सर्विस के लिए सबसे सटीक परमिशन -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
+    
+    <!-- Android 13/14 नोटिफिकेशन रनटाइम परमिशन -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -22,7 +24,7 @@
         tools:targetApi="34">
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name="com.ashraf.whatsappvpn.ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -30,10 +32,12 @@
             </intent-filter>
         </activity>
 
+        <!-- हमारी Shadowsocks VPN Service -->
+        <!-- 🎯 यहाँ foregroundServiceType को "vpn" कर दिया है, जो एंड्रॉइड 14 का ऑफिशियल नियम है -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="connectedDevice"
+            android:foregroundServiceType="vpn"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
