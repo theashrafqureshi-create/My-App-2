@@ -1,4 +1,4 @@
-Name: Build Fixed Integrated Android Package
+name: Build Fixed Integrated Android Package
 
 on:
   push:
