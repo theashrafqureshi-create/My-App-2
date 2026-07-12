@@ -1,8 +1,11 @@
 package com.ashraf.whatsappvpn.ui
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,12 +23,12 @@ class MainActivity : AppCompatActivity() {
 
     private var isConnected = false
 
-    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर (पुराने onActivityResult का क्रैश-प्रूफ रिप्लेसमेंट)
+    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            // सिस्टम विंडो पूरी तरह साफ होने के लिए 200ms का सेफ डिले ताकि Android 14 ऐप को किल न करे
+            // सिस्टम डायलॉग पूरी तरह हटने के लिए 200ms का सेफ डिले
             Handler(Looper.getMainLooper()).postDelayed({
                 handleVpnConnectionSuccess()
             }, 200)
@@ -38,10 +41,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 🎯 [NEW ADDITION] Android 13 और 14 क्रैश फिक्स: ऐप खुलते ही नोटिफिकेशन की रनटाइम परमिशन मांगना
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+        // 🎯 Android 13/14 क्रैश फिक्स: ऐप खुलते ही सही मैनिफेस्ट परमिशन स्ट्रिंग के साथ रिक्वेस्ट करना
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
             }
         }
 
@@ -50,18 +53,19 @@ class MainActivity : AppCompatActivity() {
         val btnCloseBanner = findViewById<Button>(R.id.btnCloseBanner)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
 
-        // बैनर बंद करने का लॉजिक (जैसा तुम्हारा ओरिजिनल था)
+        // बैनर बंद करने का लॉजिक
         btnCloseBanner.setOnClickListener {
             greetingBanner.visibility = View.GONE
         }
 
-        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा (जैसा तुम्हारा ओरिजिनल था)
+        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
         btnSettings.setOnClickListener {
+            // नोट: अगर SettingsActivity अलग पैकेज में है तो इम्पोर्ट चेक करें
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
 
-        // वीपीएन कनेक्ट बटन का लॉजिक (जैसा तुम्हारा ओरिजिनल था)
+        // वीपीएन कनेक्ट बटन का लॉजिक
         btnConnect.setOnClickListener {
             if (!isConnected) {
                 // सुरक्षित तरीके से वीपीएन परमिशन की जांच
@@ -79,7 +83,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और服务 चालू करने का सेफ हैंडलर
+    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और सर्विस चालू करने का हैंडलर
     private fun handleVpnConnectionSuccess() {
         startVpnService()
         val btnConnect = findViewById<Button>(R.id.btnConnect)
@@ -89,7 +93,7 @@ class MainActivity : AppCompatActivity() {
         isConnected = true
     }
 
-    // वीपीएन बंद करने का सेफ हैंडलर
+    // वीपीएन बंद करने का हैंडलर
     private fun handleVpnDisconnection() {
         stopVpnService()
         val btnConnect = findViewById<Button>(R.id.btnConnect)
@@ -107,6 +111,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun stopVpnService() {
         val intent = Intent(this, ShadowsocksVpnService::class.java)
-        stopService(intent) // ओएस को डायरेक्ट सर्विस स्टॉप कमांड
+        stopService(intent)
+    }
+
+    // नोटिफिकेशन परमिशन के रिज़ल्ट को सेफली हैंडल करने के लिए
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 101) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("WhatsAppVPN", "Notification permission granted")
+            }
+        }
     }
 }
