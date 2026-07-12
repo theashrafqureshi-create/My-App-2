@@ -1,4 +1,4 @@
-name: Build Fixed Integrated Android Package
+Name: Build Fixed Integrated Android Package
 
 on:
   push:
@@ -105,21 +105,30 @@ jobs:
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/tools">
+            xmlns:tools="http://schemas.google.com/tools">
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+            
+            <!-- 🎯 Android 14 वीपीएन फ़ोरग्राउंड सर्विस के लिए सबसे सटीक परमिशन -->
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
+            
+            <!-- 🎯 Android 13/14 नोटिफिकेशन रनटाइम परमिशन -->
+            <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+            
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
             <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
             
             <application
+                android:name=".AppConfig"
                 android:allowBackup="true"
                 android:icon="@android:drawable/sym_def_app_icon"
                 android:roundIcon="@android:drawable/sym_def_app_icon"
                 android:label="WhatsApp VPN"
                 android:supportsRtl="true"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+                tools:targetApi="34">
                 
                 <activity
                     android:name=".ui.MainActivity"
@@ -141,10 +150,11 @@ jobs:
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
-                <!-- यहाँ तुम्हारी असली जावा सर्विस का पूरा पाथ सही सेट कर दिया है -->
+                <!-- 🎯 यहाँ foregroundServiceType को "vpn" कर दिया है, जो एंड्रॉइड 14 का ऑफिशियल नियम है -->
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
+                    android:foregroundServiceType="vpn"
                     android:exported="false">
                     <intent-filter>
                         <action android:name="android.net.VpnService" />
