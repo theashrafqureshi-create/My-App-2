@@ -9,7 +9,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log // 🎯 यह इम्पोर्ट गायब था, जिसकी वजह से बिल्ड फेल हुआ
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.RelativeLayout
@@ -24,17 +24,19 @@ class MainActivity : AppCompatActivity() {
 
     private var isConnected = false
 
-    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर
+    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर (फिक्स्ड रिस्पॉन्स चेकिंग)
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            // सिस्टम डायलॉग पूरी तरह हटने के लिए 200ms का सेफ डिले
+    ) { _ ->
+        // एंड्रॉइड वीपीएन डायलॉग के बाद दोबारा सुरक्षा जांच करना सबसे बेस्ट तरीका है
+        val intent = VpnService.prepare(this)
+        if (intent == null) {
+            // अगर दोबारा चेक करने पर इंटेंट नल है, मतलब परमिशन पक्का मिल चुकी है
             Handler(Looper.getMainLooper()).postDelayed({
                 handleVpnConnectionSuccess()
             }, 200)
         } else {
-            Toast.makeText(this, "VPN Permission Denied!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "VPN Permission Required to Connect!", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -42,7 +44,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 🎯 Android 13/14 क्रैश फिक्स: ऐप खुलते ही सही मैनिफेस्ट परमिशन स्ट्रिंग के साथ रिक्वेस्ट करना
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
@@ -54,12 +55,10 @@ class MainActivity : AppCompatActivity() {
         val btnCloseBanner = findViewById<Button>(R.id.btnCloseBanner)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
 
-        // बैनर बंद करने का लॉजिक
         btnCloseBanner.setOnClickListener {
             greetingBanner.visibility = View.GONE
         }
 
-        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
         btnSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
@@ -68,13 +67,21 @@ class MainActivity : AppCompatActivity() {
         // वीपीएन कनेक्ट बटन का लॉजिक
         btnConnect.setOnClickListener {
             if (!isConnected) {
+                // 🎯 [SMART VALIDATION] सर्विस चालू करने से पहले चेक करो कि क्या लिंक सच में सेव है
+                val sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE)
+                val savedLink = sharedPref.getString("ss_link", "")
+
+                if (savedLink.isNullOrBlank()) {
+                    // अगर लिंक नहीं है, तो सर्विस स्टार्ट मत करो, सीधे स्क्रीन पर बैनर अलर्ट टोस्ट दिखाओ
+                    Toast.makeText(this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
+                    return@setOnClickListener
+                }
+
                 // सुरक्षित तरीके से वीपीएन परमिशन की जांच
                 val intent = VpnService.prepare(this)
                 if (intent != null) {
-                    // अगर परमिशन नहीं है, तो नए लॉन्चर से डायलॉग खोलो
                     vpnPermissionLauncher.launch(intent)
                 } else {
-                    // अगर परमिशन पहले से मिली हुई है, तो सीधे चालू करो
                     handleVpnConnectionSuccess()
                 }
             } else {
@@ -83,7 +90,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और सर्विस चालू करने का हैंडलर
     private fun handleVpnConnectionSuccess() {
         startVpnService()
         val btnConnect = findViewById<Button>(R.id.btnConnect)
@@ -93,7 +99,6 @@ class MainActivity : AppCompatActivity() {
         isConnected = true
     }
 
-    // वीपीएन बंद करने का हैंडलर
     private fun handleVpnDisconnection() {
         stopVpnService()
         val btnConnect = findViewById<Button>(R.id.btnConnect)
@@ -104,17 +109,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService::class.java)
-        // Android 14 फ़ोरग्राउंड सर्विस को ContextCompat से ही स्टार्ट करना सबसे सेफ होता है
+        val intent = Intent(this, ShadowsocksVpnService.class)
         ContextCompat.startForegroundService(this, intent)
     }
 
     private fun stopVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService::class.java)
+        val intent = Intent(this, ShadowsocksVpnService.class)
+        // 🎯 सर्विस को साफ़-साफ़ बंद होने का एक्शन भेजना
+        intent.action = "STOP_VPN"
         stopService(intent)
     }
 
-    // नोटिफिकेशन परमिशन के रिज़ल्ट को सेफली हैंडल करने के लिए
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 101) {
