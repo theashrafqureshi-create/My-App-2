@@ -80,6 +80,14 @@ public class ShadowsocksVpnService extends VpnService {
             vpnThread.interrupt();
             vpnThread = null;
         }
+
+        // --- चाबी को तुरंत गायब करने के लिए नए कमांड्स ---
+        try {
+            stopForeground(true); // फ़ोरग्राउंड नोटिफिकेशन हटाएगा
+            stopSelf();           // सर्विस को रैम से पूरी तरह बंद करेगा
+        } catch (Exception e) {
+            Log.e(TAG, "Error stopping service components", e);
+        }
     }
 
     @Override
