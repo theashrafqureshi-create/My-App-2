@@ -11,7 +11,6 @@ import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.util.Log;
-import androidx.core.app.NotificationCompat; // ध्यान दें: अगर बिल्ड में एरर आए तो android.app.Notification.Builder भी यूज़ कर सकते हैं
 import java.io.IOException;
 
 public class ShadowsocksVpnService extends VpnService {
@@ -26,33 +25,37 @@ public class ShadowsocksVpnService extends VpnService {
         Log.d(TAG, "VPN Service Started Manually");
         stopVpn();
 
-        // 🎯 Android 14 क्रैश फिक्स: टनल और लोकल सर्वर से पहले नोटिफिकेशन चैनल बनाना और सर्विस को फ़ोरग्राउंड में लाना
+        // 🎯 Android 14 क्रैश फिक्स: सबसे पहले प्योर एंड्रॉइड का नोटिफिकेशन चैनल बनाना
         createNotificationChannel();
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("WhatsApp VPN Connected")
-                .setContentText("VPN tunnel is active...")
-                .setSmallIcon(android.R.drawable.ic_menu_info_details)
-                .setOngoing(true)
-                .build();
         
-        // सर्विस को सिस्टम के सामने लाइव करना (API 34 के लिए सेफ तरीका)
+        Notification notification;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notification = new Notification.Builder(this, CHANNEL_ID)
+                    .setContentTitle("WhatsApp VPN Connected")
+                    .setContentText("VPN tunnel is active...")
+                    .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                    .setOngoing(true)
+                    .build();
+        } else {
+            notification = new Notification.Builder(this)
+                    .setContentTitle("WhatsApp VPN Connected")
+                    .setContentText("VPN tunnel is active...")
+                    .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                    .getNotification();
+        }
+        
+        // 🎯 सिस्टम को बताना कि यह connectedDevice (VPN) टाइप सर्विस है
         startForeground(1, notification);
 
-        // SharedPreferences से सेव की हुई ss:// लिंक को पढ़ना
+        // SharedPreferences से लिंक पढ़ना
         SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
         String savedLink = sharedPref.getString("ss_link", "");
 
-        // डिफ़ॉल्ट वैल्यूज
         String serverIp = "127.0.0.1";
         int serverPort = 8388;
         String password = "your_password";
         String method = "AES";
 
-        if (!savedLink.isEmpty()) {
-            Log.d(TAG, "Saved SS Link Found in Backend: " + savedLink);
-        }
-
-        // लोकल प्रॉक्सी सर्वर को चालू करना
         localServer = new ShadowsocksLocalServer();
         localServer.startServer(serverIp, serverPort, password, method);
 
@@ -74,23 +77,21 @@ public class ShadowsocksVpnService extends VpnService {
                .addAddress("10.0.0.2", 24)
                .addRoute("0.0.0.0", 0);
 
-        // 🎯 तुम्हारा DNS कोड
+        // तुम्हारा DNS कोड
         builder.addDnsServer("8.8.8.8");
         builder.addDnsServer("1.1.1.1");
 
-        // 🎯 तुम्हारा व्हाट्सएप फ़िल्टर कोड
+        // तुम्हारा व्हाट्सएप फ़िल्टर कोड
         try {
             builder.addAllowedApplication("com.whatsapp");
-            Log.d(TAG, "Strict Routing: Normal WhatsApp added to tunnel");
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "Normal WhatsApp is not installed");
+            Log.e(TAG, "Normal WhatsApp not installed");
         }
 
         try {
             builder.addAllowedApplication("com.whatsapp.w4b");
-            Log.d(TAG, "Strict Routing: WhatsApp Business added to tunnel");
         } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "WhatsApp Business is not installed");
+            Log.e(TAG, "WhatsApp Business not installed");
         }
 
         vpnInterface = builder.establish();
@@ -127,7 +128,6 @@ public class ShadowsocksVpnService extends VpnService {
         if (vpnInterface != null) {
             try {
                 vpnInterface.close();
-                Log.d(TAG, "VPN Interface Closed");
             } catch (IOException e) {
                 Log.e(TAG, "Error closing interface", e);
             }
@@ -141,7 +141,7 @@ public class ShadowsocksVpnService extends VpnService {
             stopForeground(true);
             stopSelf();
         } catch (Exception e) {
-            Log.e(TAG, "Error stopping service components", e);
+            Log.e(TAG, "Error stopping service", e);
         }
     }
 
@@ -149,6 +149,5 @@ public class ShadowsocksVpnService extends VpnService {
     public void onDestroy() {
         super.onDestroy();
         stopVpn();
-        Log.d(TAG, "VPN Service Destroyed");
     }
 }
