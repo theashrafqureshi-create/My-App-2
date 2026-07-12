@@ -103,7 +103,7 @@ jobs:
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <?xml version="1.0" encoding="utf-8"?>
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.android.com/apk/res/android">
+            xmlns:tools="http://schemas.android.com/tools">
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
@@ -132,11 +132,10 @@ jobs:
                     android:name=".ui.SettingsActivity"
                     android:exported="false" />
 
-                <!-- स्कैनर इंजन एक्टिविटी रजिस्टर की गई -->
                 <activity
                     android:name="com.journeyapps.barcodescanner.CaptureActivity"
                     android:screenOrientation="fullSensor"
-                    android:tools:replace="screenOrientation"
+                    tools:replace="android:screenOrientation"
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
@@ -546,7 +545,6 @@ jobs:
 
         class SettingsActivity : AppCompatActivity() {
 
-            // ZXing स्मार्ट कैमरा स्कैनर लॉन्चर इंजन
             private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
                 if (result.contents == null) {
                     Toast.makeText(this, "Cancelled Scanner", Toast.LENGTH_SHORT).show()
@@ -581,7 +579,6 @@ jobs:
                     }
                 }
 
-                // लाइव स्कैनर लॉन्चर एक्शन (कैमरा ओपन फिक्स)
                 btnOpenScanner.setOnClickListener {
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                         ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 101)
@@ -610,7 +607,7 @@ jobs:
                 val options = ScanOptions().apply {
                     setDesiredBarcodeFormats(ScanOptions.QR_CODE)
                     setPrompt("Align Shadowsocks QR Code inside the box to Scan")
-                    setCameraId(0) // रियर कैमरा चालू करने के लिए
+                    setCameraId(0)
                     setBeepEnabled(true)
                     setBarcodeImageEnabled(true)
                     setOrientationLocked(false)
@@ -680,7 +677,6 @@ jobs:
                 }
             }
 
-            // चाबी हमेशा के लिए हटाने का तगड़ा फिक्स
             private fun destroyVpnTunnel() {
                 try {
                     vpnInterface?.close()
