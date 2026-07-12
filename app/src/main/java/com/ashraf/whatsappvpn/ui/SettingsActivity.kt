@@ -1,6 +1,7 @@
 package com.ashraf.whatsappvpn.ui
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
@@ -26,12 +27,14 @@ import java.io.InputStream
 
 class SettingsActivity : AppCompatActivity() {
 
-    // लाइव कैमरा स्कैनर लॉन्चर
+    // लाइव कामना स्कैनर लॉन्चर
     private val barcodeLauncher = registerForActivityResult(ScanContract()) { result ->
         if (result.contents == null) {
             Toast.makeText(this, "Cancelled Scanner", Toast.LENGTH_SHORT).show()
         } else {
-            findViewById<EditText>(R.id.etVpnLink).setText(result.contents)
+            val scannedText = result.contents
+            findViewById<EditText>(R.id.etVpnLink).setText(scannedText)
+            saveVpnConfig(scannedText) // स्कैनर से आते ही बैकएंड में परमानेंट सेव
             Toast.makeText(this, "Scanned Configuration Loaded!", Toast.LENGTH_SHORT).show()
         }
     }
@@ -46,11 +49,19 @@ class SettingsActivity : AppCompatActivity() {
         val btnOpenScanner = findViewById<Button>(R.id.btnOpenScanner)
         val btnOpenGallery = findViewById<Button>(R.id.btnOpenGallery)
 
+        // पहले से सेव की हुई लिंक को बॉक्स में वापस दिखाना ताकि बॉक्स खाली न मिले
+        val sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE)
+        val savedLink = sharedPref.getString("ss_link", "")
+        if (!savedLink.isNullOrEmpty()) {
+            etVpnLink.setText(savedLink)
+        }
+
         btnBack.setOnClickListener { finish() }
 
         btnSaveLink.setOnClickListener {
             val link = etVpnLink.text.toString().trim()
             if (link.startsWith("ss://")) {
+                saveVpnConfig(link) // मैन्युअल इनपुट को बैकएंड में परमानेंट सेव
                 Toast.makeText(this, "Shadowsocks Config Saved!", Toast.LENGTH_SHORT).show()
             } else {
                 Toast.makeText(this, "Error: Invalid Shadowsocks Link!", Toast.LENGTH_SHORT).show()
@@ -79,6 +90,15 @@ class SettingsActivity : AppCompatActivity() {
             } else {
                 openGalleryPicker()
             }
+        }
+    }
+
+    // डेटा को फोन के स्टोरेज में सेव करने का सेफ फंक्शन
+    private fun saveVpnConfig(link: String) {
+        val sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE)
+        with(sharedPref.edit()) {
+            putString("ss_link", link)
+            apply()
         }
     }
 
@@ -129,7 +149,10 @@ class SettingsActivity : AppCompatActivity() {
                     val reader = MultiFormatReader()
                     
                     val result = reader.decode(binaryBitmap)
-                    findViewById<EditText>(R.id.etVpnLink).setText(result.text)
+                    val scannedText = result.text
+                    
+                    findViewById<EditText>(R.id.etVpnLink).setText(scannedText)
+                    saveVpnConfig(scannedText) // गैलरी से लोड होते ही बैकएंड में परमानेंट सेव
                     Toast.makeText(this, "QR Code Processed from Gallery!", Toast.LENGTH_LONG).show()
                 } catch (e: Exception) {
                     Toast.makeText(this, "Failed to parse QR Code from this image!", Toast.LENGTH_LONG).show()
