@@ -113,7 +113,6 @@ jobs:
             <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
             
             <application
-                android:name=".AppConfig"
                 android:allowBackup="true"
                 android:icon="@android:drawable/sym_def_app_icon"
                 android:roundIcon="@android:drawable/sym_def_app_icon"
@@ -123,7 +122,7 @@ jobs:
                 tools:targetApi="34">
                 
                 <activity
-                    android:name=".ui.MainActivity"
+                    android:name="com.ashraf.whatsappvpn.ui.MainActivity"
                     android:exported="true">
                     <intent-filter>
                         <action android:name="android.intent.action.MAIN" />
@@ -131,8 +130,9 @@ jobs:
                     </intent-filter>
                 </activity>
 
+                <!-- 🎯 [FIXED] तुम्हारी मेहनत की स्क्रिप्ट में ये दोनों एक्टिविटीज गायब थीं, उन्हें यहाँ जोड़ दिया है ताकि 'OK' दबाते ही क्रैश न हो -->
                 <activity
-                    android:name=".ui.SettingsActivity"
+                    android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
                     android:exported="false" />
 
                 <activity
@@ -140,7 +140,6 @@ jobs:
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
-                <!-- 🎯 [FIXED] यहाँ foregroundServiceType को छोटे अक्षरों में specialUse कर दिया है और नीचे प्रॉपर्टी टैग भी जोड़ दिया है -->
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
