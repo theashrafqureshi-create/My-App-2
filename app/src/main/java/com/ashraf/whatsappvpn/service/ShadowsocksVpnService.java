@@ -45,10 +45,9 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 [FIXED] कंपाइलर एरर का पक्का इलाज: यहाँ कीवर्ड हटाकर सीधे 256 लिख दिया है। 
-        // इससे गिटहब बिना किसी 'cannot find symbol' एरर के सक्सेसफुली बिल्ड पास कर देगा।
+        // 🎯 [FIXED] कंपाइलर और रनटाइम क्रैश फिक्स: यहाँ मैनिफेस्ट के specialUse से मैच करने के लिए सीधा नंबर 1073741824 डाल दिया है।
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, 256);
+            startForeground(1, notification, 1073741824);
         } else {
             startForeground(1, notification);
         }
