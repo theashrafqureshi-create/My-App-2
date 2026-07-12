@@ -143,10 +143,9 @@ jobs:
                     android:name=".ui.SettingsActivity"
                     android:exported="false" />
 
+                <!-- 🎯 [FIXED] Manifest Merger Error बाईपास: यहाँ से स्क्रीन ओरिएंटेशन का टकराव हटा दिया गया है -->
                 <activity
                     android:name="com.journeyapps.barcodescanner.CaptureActivity"
-                    android:screenOrientation="fullSensor"
-                    tools:replace="android:screenOrientation"
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
@@ -437,9 +436,7 @@ jobs:
                         android:backgroundTint="#FFFFFF"
                         android:text="🖼️  CHOOSE FROM GALLERY SCREENSHOT"
                         android:textColor="#075E54"
-                        android:textStyle="bold"
-                        strokeWidth="2dp"
-                        strokeColor="#075E54"/>
+                        android:textStyle="bold"/>
                 </LinearLayout>
             </ScrollView>
         </LinearLayout>
