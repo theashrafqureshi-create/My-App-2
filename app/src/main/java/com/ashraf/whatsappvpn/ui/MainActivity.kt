@@ -20,12 +20,12 @@ class MainActivity : AppCompatActivity() {
 
     private var isConnected = false
 
-    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉचर (पुराने onActivityResult का क्रैश-प्रूफ रिप्लेसमेंट)
+    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर (पुराने onActivityResult का क्रैश-प्रूफ रिप्लेसमेंट)
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            // 🎯 सिस्टम विंडो पूरी तरह साफ होने के लिए 200ms का सेफ डिले ताकि Android 14 ऐप को किल न करे
+            // सिस्टम विंडो पूरी तरह साफ होने के लिए 200ms का सेफ डिले ताकि Android 14 ऐप को किल न करे
             Handler(Looper.getMainLooper()).postDelayed({
                 handleVpnConnectionSuccess()
             }, 200)
@@ -38,23 +38,30 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // 🎯 [NEW ADDITION] Android 13 और 14 क्रैश फिक्स: ऐप खुलते ही नोटिफिकेशन की रनटाइम परमिशन मांगना
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
+
         val btnConnect = findViewById<Button>(R.id.btnConnect)
         val greetingBanner = findViewById<RelativeLayout>(R.id.greetingBanner)
         val btnCloseBanner = findViewById<Button>(R.id.btnCloseBanner)
         val btnSettings = findViewById<Button>(R.id.btnSettings)
 
-        // बैनर बंद करने का लॉजिक
+        // बैनर बंद करने का लॉजिक (जैसा तुम्हारा ओरिजिनल था)
         btnCloseBanner.setOnClickListener {
             greetingBanner.visibility = View.GONE
         }
 
-        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
+        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा (जैसा तुम्हारा ओरिजिनल था)
         btnSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
 
-        // वीपीएन कनेक्ट बटन का लॉजिक
+        // वीपीएन कनेक्ट बटन का लॉजिक (जैसा तुम्हारा ओरिजिनल था)
         btnConnect.setOnClickListener {
             if (!isConnected) {
                 // सुरक्षित तरीके से वीपीएन परमिशन की जांच
@@ -72,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और सर्विस चालू करने का सेफ हैंडलर
+    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और服务 चालू करने का सेफ हैंडलर
     private fun handleVpnConnectionSuccess() {
         startVpnService()
         val btnConnect = findViewById<Button>(R.id.btnConnect)
@@ -94,7 +101,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startVpnService() {
         val intent = Intent(this, ShadowsocksVpnService::class.java)
-        // 🎯 Android 14 फ़ोरग्राउंड सर्विस को ContextCompat से ही स्टार्ट करना सबसे सेफ होता है
+        // Android 14 फ़ोरग्राउंड सर्विस को ContextCompat से ही स्टार्ट करना सबसे सेफ होता है
         ContextCompat.startForegroundService(this, intent)
     }
 
