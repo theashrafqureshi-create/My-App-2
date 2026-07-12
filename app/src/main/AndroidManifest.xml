@@ -6,9 +6,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    
-    <!-- 🎯 Android 14 (API 34) क्रैश को रोकने के लिए सबसे ज़रूरी परमिशन -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    
+    <!-- 🎯 Android 13/14 फ़ोरग्राउंड सर्विस क्रैश को रोकने के लिए सबसे ज़रूरी परमिशन -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".AppConfig"
@@ -29,8 +30,6 @@
             </intent-filter>
         </activity>
 
-        <!-- हमारी नई मैनुअल Shadowsocks VPN Service -->
-        <!-- 🎯 यहाँ हमने foregroundServiceType जोड़ दिया है ताकि Android 14 इसे क्रैश न करे -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
