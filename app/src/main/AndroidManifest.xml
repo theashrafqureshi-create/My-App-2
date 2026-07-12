@@ -2,13 +2,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.google.com/tools">
 
+    <!-- 🎯 [FIXED] इंटरनेट और वीपीएन के साथ-साथ कैमरा और स्टोरेज की ज़रूरी परमिशन यहाँ ऐड कर दी हैं -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
-    
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:name=".AppConfig"
@@ -28,6 +30,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- 🎯 [FIXED Culprit] जो सेटिंग्स एक्टिविटी गायब थी, उसे यहाँ रजिस्टर कर दिया है -->
+        <activity
+            android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
+            android:exported="false" />
+
+        <!-- 🎯 [FIXED Culprit] क्यूआर कोड स्कैनर की एक्टिविटी को भी यहाँ रजिस्टर कर दिया है -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:theme="@style/zxing_CaptureTheme"
+            android:exported="false" />
 
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
