@@ -32,12 +32,10 @@ jobs:
             }
         }
         dependencyResolutionManagement {
-            // 🎯 [FIXED] तुम्हारी असली फाइल के अनुसार बिना किसी रुकावट के ऑनलाइन जिटपैक लाइब्रेरी उठाने का सही मोड
             repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
             repositories {
                 google()
                 mavenCentral()
-                // 🎯 [FIXED] क्यूआर स्कैनर इंजन के लिए बेहद ज़रूरी ऑनलाइन जिटपैक तिजोरी का लिंक
                 maven { url 'https://jitpack.io' }
             }
         }
@@ -93,7 +91,6 @@ jobs:
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
             
-            // बारकोड और गैलरी QR इंजन के लिए ये दोनों लाइनें यहाँ जोड़ दी हैं:
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
         }
@@ -109,13 +106,8 @@ jobs:
             <uses-permission android:name="android.permission.INTERNET" />
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-            
-            <!-- 🎯 Android 14 वीपीएन फ़ोरग्राउंड सर्विस के लिए सबसे सटीक परमिशन -->
             <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
-            
-            <!-- 🎯 Android 13/14 नोटिफिकेशन रनटाइम परमिशन -->
             <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-            
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
             <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -143,17 +135,16 @@ jobs:
                     android:name=".ui.SettingsActivity"
                     android:exported="false" />
 
-                <!-- 🎯 [FIXED] Manifest Merger Error बाईपास: यहाँ से स्क्रीन ओरिएंटेशन का टकराव हटा दिया गया है -->
                 <activity
                     android:name="com.journeyapps.barcodescanner.CaptureActivity"
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
-                <!-- 🎯 [FIXED] AAPT क्रैश फिक्स: यहाँ छोटे "vpn" को बदलकर एंड्रॉइड 14 का ऑफिशियल "vpn" फ्लैग बड़े अक्षरों में कर दिया है -->
+                <!-- 🎯 [FIXED] AAPT क्रैश फिक्स: "vpn" को सिस्टम की ऑफिशियल कैटेगरी "specialUse" से रिप्लेस कर दिया है -->
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
-                    android:foregroundServiceType="vpn"
+                    android:foregroundServiceType="specialUse"
                     android:exported="false">
                     <intent-filter>
                         <action android:name="android.net.VpnService" />
@@ -183,7 +174,6 @@ jobs:
       run: |
         mkdir -p app/src/main/res/drawable
         
-        # Disconnected State (Red Glow Round Button)
         cat << 'EOF' > app/src/main/res/drawable/btn_disconnected_glow.xml
         <?xml version="1.0" encoding="utf-8"?>
         <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -194,7 +184,6 @@ jobs:
         </shape>
         EOF
 
-        # Connected State (Green Glow Round Button)
         cat << 'EOF' > app/src/main/res/drawable/btn_connected_glow.xml
         <?xml version="1.0" encoding="utf-8"?>
         <shape xmlns:android="http://schemas.android.com/apk/res/android"
@@ -205,7 +194,6 @@ jobs:
         </shape>
         EOF
 
-        # Greeting Banner Background Design
         cat << 'EOF' > app/src/main/res/drawable/banner_bg.xml
         <?xml version="1.0" encoding="utf-8"?>
         <shape xmlns:android="http://schemas.android.com/apk/res/android">
@@ -215,7 +203,6 @@ jobs:
         </shape>
         EOF
 
-        # Edit Text Box Border Design for Settings
         cat << 'EOF' > app/src/main/res/drawable/edit_text_border.xml
         <?xml version="1.0" encoding="utf-8"?>
         <shape xmlns:android="http://schemas.android.com/apk/res/android">
@@ -234,7 +221,6 @@ jobs:
             android:layout_height="match_parent"
             android:background="#F4F7F5">
 
-            <!-- Action Bar with Settings Button on Top Right -->
             <RelativeLayout
                 android:id="@+id/topBar"
                 android:layout_width="match_parent"
@@ -265,7 +251,6 @@ jobs:
                     android:textStyle="bold" />
             </RelativeLayout>
 
-            <!-- Circular Connection Engine Button -->
             <Button
                 android:id="@+id/btnConnect"
                 android:layout_width="140dp"
@@ -278,7 +263,6 @@ jobs:
                 android:textStyle="bold"
                 android:textSize="14sp"/>
 
-            <!-- Dismissible First-Time Greeting Banner -->
             <RelativeLayout
                 android:id="@+id/greetingBanner"
                 android:layout_width="match_parent"
@@ -333,7 +317,6 @@ jobs:
             android:orientation="vertical"
             android:background="#F4F7F5">
 
-            <!-- Settings Top Header Bar -->
             <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
@@ -371,7 +354,6 @@ jobs:
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
 
-                    <!-- Section: Shadowsocks 3X Link Paste -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -409,7 +391,6 @@ jobs:
                         android:layout_marginTop="20dp"
                         android:layout_marginBottom="20dp"/>
 
-                    <!-- Section: Smart QR Scanner and Gallery Hub -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
