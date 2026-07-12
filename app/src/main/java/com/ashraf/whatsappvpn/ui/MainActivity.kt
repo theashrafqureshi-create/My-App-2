@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
             greetingBanner.visibility = View.GONE
         }
 
-        // हमने यह नया कमांड जोड़ा: सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
+        // सेटिंग्स गियर बटन पर क्लिक करने पर सेटिंग्स पेज खुलेगा
         btnSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
@@ -38,38 +38,52 @@ class MainActivity : AppCompatActivity() {
         // वीपीएन कनेक्ट बटन का लॉजिक
         btnConnect.setOnClickListener {
             if (!isConnected) {
+                // सुरक्षित तरीके से वीपीएन परमिशन की जांच
                 val intent = VpnService.prepare(this)
                 if (intent != null) {
+                    // अगर परमिशन नहीं है, तो सिस्टम डायलॉग दिखाओ
                     startActivityForResult(intent, 0)
                 } else {
-                    onActivityResult(0, RESULT_OK, null)
+                    // अगर परमिशन पहले से मिली हुई है, तो सीधे सेफ तरीके से चालू करो
+                    handleVpnConnectionSuccess()
                 }
             } else {
-                stopVpnService()
-                btnConnect.text = "CONNECT\nENGINE"
-                btnConnect.setBackgroundResource(R.drawable.btn_disconnected_glow)
-                Toast.makeText(this, "VPN Disconnected", Toast.LENGTH_SHORT).show()
-                isConnected = false
+                handleVpnDisconnection()
             }
         }
     }
 
+    // जब परमिशन मिल जाए या पहले से मौजूद हो, तो यूआई अपडेट और सर्विस चालू करने का सेफ हैंडलर
+    private fun handleVpnConnectionSuccess() {
+        startVpnService()
+        val btnConnect = findViewById<Button>(R.id.btnConnect)
+        btnConnect.text = "DISCONNECT"
+        btnConnect.setBackgroundResource(R.drawable.btn_connected_glow)
+        Toast.makeText(this, "VPN Connected Successfully!", Toast.LENGTH_SHORT).show()
+        isConnected = true
+    }
+
+    // वीपीएन बंद करने का सेफ हैंडलर
+    private fun handleVpnDisconnection() {
+        stopVpnService()
+        val btnConnect = findViewById<Button>(R.id.btnConnect)
+        btnConnect.text = "CONNECT\nENGINE"
+        btnConnect.setBackgroundResource(R.drawable.btn_disconnected_glow)
+        Toast.makeText(this, "VPN Disconnected", Toast.LENGTH_SHORT).show()
+        isConnected = false
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK) {
-            startVpnService()
-            val btnConnect = findViewById<Button>(R.id.btnConnect)
-            btnConnect.text = "DISCONNECT"
-            btnConnect.setBackgroundResource(R.drawable.btn_connected_glow)
-            Toast.makeText(this, "VPN Connected Successfully!", Toast.LENGTH_SHORT).show()
-            isConnected = true
+        if (requestCode == 0 && resultCode == RESULT_OK) {
+            handleVpnConnectionSuccess()
+        } else {
+            Toast.makeText(this, "VPN Permission Denied!", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun startVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService::class.java).apply {
-            action = "START"
-        }
+        val intent = Intent(this, ShadowsocksVpnService::class.java)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
@@ -78,9 +92,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun stopVpnService() {
-        val intent = Intent(this, ShadowsocksVpnService::class.java).apply {
-            action = "STOP"
-        }
-        startService(intent)
+        val intent = Intent(this, ShadowsocksVpnService::class.java)
+        stopService(intent) // ओएस को डायरेक्ट सर्विस स्टॉप कमांड (क्रैश प्रूफ)
     }
 }
