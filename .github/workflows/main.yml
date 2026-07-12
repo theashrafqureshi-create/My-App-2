@@ -92,6 +92,8 @@ jobs:
             implementation 'androidx.appcompat:appcompat:1.6.1'
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+            
+            // बारकोड और गैलरी QR इंजन के लिए ये दोनों लाइनें यहाँ जोड़ दी हैं:
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
         }
@@ -139,6 +141,7 @@ jobs:
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
+                <!-- यहाँ तुम्हारी असली जावा सर्विस का पूरा पाथ सही सेट कर दिया है -->
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
