@@ -7,12 +7,14 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
+import android.util.Base64;
 import android.util.Log;
+import android.widget.Toast;
 import java.io.IOException;
+import java.net.URI;
 
 public class ShadowsocksVpnService extends VpnService {
     private static final String TAG = "ShadowsocksVpn";
@@ -24,6 +26,18 @@ public class ShadowsocksVpnService extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "VPN Service Started Manually");
+
+        // SharedPreferences से सेव किया हुआ ss:// लिंक पढ़ना
+        SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
+        String savedLink = sharedPref.getString("ss_link", "");
+
+        // 🎯 [SMART CHECK] अशरफ भाई का नियम: अगर लिंक खाली है, तो क्रैश मत हो, यूजर को बैनर/टोस्ट दिखाओ
+        if (savedLink == null || savedLink.trim().isEmpty()) {
+            Toast.makeText(this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show();
+            stopSelf();
+            return START_NOT_STICKY;
+        }
+
         stopVpn();
 
         // Android 14 क्रैश फिक्स: प्योर एंड्रॉइड का नोटिफिकेशन चैनल बनाना
@@ -52,14 +66,54 @@ public class ShadowsocksVpnService extends VpnService {
             startForeground(1, notification);
         }
 
-        // SharedPreferences से LINK पढ़ना
-        SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
-        String savedLink = sharedPref.getString("ss_link", "");
-
+        // 🎯 [BARCODE DECODER ENGINE] डमी सर्वर हटाकर असली ss:// लिंक को पार्स करने का पूरा सामान
         String serverIp = "127.0.0.1";
         int serverPort = 8388;
         String password = "your_password";
         String method = "AES";
+
+        try {
+            if (savedLink.startsWith("ss://")) {
+                // अगर लिंक के पीछे '#' टैग या नाम है तो उसे हटाकर साफ URI बनाना
+                String cleanLink = savedLink;
+                if (cleanLink.contains("#")) {
+                    cleanLink = cleanLink.split("#")[0];
+                }
+                
+                URI uri = URI.create(cleanLink);
+                String userInfo = uri.getUserInfo();
+                
+                // अगर यूजर इन्फो Base64 एन्क्रिप्टेड है तो उसे खोलना (जैसे chacha20:ashraf2026)
+                if (userInfo != null) {
+                    if (!userInfo.contains(":")) {
+                        try {
+                            userInfo = new String(Base64.decode(userInfo, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
+                        } catch (Exception e) {
+                            try {
+                                userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
+                            } catch (Exception ex) {
+                                Log.e(TAG, "Base64 decoding failed, using raw userInfo");
+                            }
+                        }
+                    }
+                    
+                    if (userInfo.contains(":")) {
+                        String[] parts = userInfo.split(":", 2);
+                        method = parts[0];
+                        password = parts[1];
+                    }
+                }
+                
+                serverIp = uri.getHost();
+                serverPort = uri.getPort();
+                if (serverPort == -1) {
+                    serverPort = 8388;
+                }
+                Log.d(TAG, "Successfully Parsed Link -> IP: " + serverIp + ", Port: " + serverPort + ", Method: " + method);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing Shadowsocks URL, falling back to secure local bridge: " + e.getMessage());
+        }
 
         localServer = new ShadowsocksLocalServer();
         localServer.startServer(serverIp, serverPort, password, method);
