@@ -77,7 +77,6 @@ jobs:
                 }
             }
             
-            // यहाँ जावा और कोट्लिन दोनों का वर्ज़न 17 पर एकदम बराबर लॉक कर दिया है
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
@@ -221,17 +220,15 @@ jobs:
         }
         EOF
 
-        - name: Build Android App Compilation Engine
+    - name: Build Android App Compilation Engine
       run: |
         chmod +x gradlew
         ./gradlew assembleDebug
 
-    # यह स्टेप एपीके का नाम बदलकर WhatsApp-VPN.apk कर देगा
     - name: Rename APK Output
       run: |
         mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/WhatsApp-VPN.apk
 
-    # यह स्टेप एपीके को गिटहब पर अपलोड करेगा ताकि तुम उसे डाउनलोड कर सको
     - name: Upload Built APK Artifact
       uses: actions/upload-artifact@v4
       with:
