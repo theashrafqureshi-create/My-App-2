@@ -140,7 +140,7 @@ jobs:
                     android:theme="@style/zxing_CaptureTheme"
                     android:exported="false" />
 
-                <!-- 🎯 [FIXED] AAPT क्रैश फिक्स: "vpn" को सिस्टम की ऑफिशियल कैटेगरी "specialUse" से रिप्लेस कर दिया है -->
+                <!-- 🎯 [FIXED] यहाँ foregroundServiceType को छोटे अक्षरों में specialUse कर दिया है और नीचे प्रॉपर्टी टैग भी जोड़ दिया है -->
                 <service 
                     android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
                     android:permission="android.permission.BIND_VPN_SERVICE"
@@ -149,6 +149,10 @@ jobs:
                     <intent-filter>
                         <action android:name="android.net.VpnService" />
                     </intent-filter>
+                    
+                    <property 
+                        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                        android:value="Custom integrated local Shadowsocks proxy tunnel engine for secure communication" />
                 </service>
             </application>
         </manifest>
@@ -186,7 +190,7 @@ jobs:
 
         cat << 'EOF' > app/src/main/res/drawable/btn_connected_glow.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://schemas.android.com/apk/res/android"
+        <shape xmlns:android="http://shape.android.com/apk/res/android"
             android:shape="oval">
             <solid android:color="#25D366" />
             <stroke android:width="4dp" android:color="#C8E6C9" />
