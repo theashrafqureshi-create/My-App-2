@@ -22,7 +22,6 @@ jobs:
 
     - name: Configure Clean Gradle Settings
       run: |
-        mkdir -p app/libs
         cat << 'EOF' > settings.gradle
         pluginManagement {
             repositories {
@@ -91,70 +90,12 @@ jobs:
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
             
+            # 🎯 [FIXED BY ASHRAF LOGIC] जो mmkv.aar तुमने मैन्युअली libs फोल्डर में डाली है, उसे यहाँ लिंक कर दिया है!
+            implementation fileTree(dir: 'libs', include: ['*.aar'])
+            
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
             implementation 'com.google.zxing:core:3.4.1'
         }
-        EOF
-
-    - name: Configure Manifest with Shadowsocks Service and Permissions
-      run: |
-        mkdir -p app/src/main
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.google.com/tools">
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
-            <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-            
-            <application
-                android:allowBackup="true"
-                android:icon="@android:drawable/sym_def_app_icon"
-                android:roundIcon="@android:drawable/sym_def_app_icon"
-                android:label="WhatsApp VPN"
-                android:supportsRtl="true"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-                tools:targetApi="34">
-                
-                <activity
-                    android:name="com.ashraf.whatsappvpn.ui.MainActivity"
-                    android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-
-                <!-- 🎯 [FIXED] तुम्हारी मेहनत की स्क्रिप्ट में ये दोनों एक्टिविटीज गायब थीं, उन्हें यहाँ जोड़ दिया है ताकि 'OK' दबाते ही क्रैश न हो -->
-                <activity
-                    android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
-                    android:exported="false" />
-
-                <activity
-                    android:name="com.journeyapps.barcodescanner.CaptureActivity"
-                    android:theme="@style/zxing_CaptureTheme"
-                    android:exported="false" />
-
-                <service 
-                    android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
-                    android:permission="android.permission.BIND_VPN_SERVICE"
-                    android:foregroundServiceType="specialUse"
-                    android:exported="false">
-                    <intent-filter>
-                        <action android:name="android.net.VpnService" />
-                    </intent-filter>
-                    
-                    <property 
-                        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                        android:value="Custom integrated local Shadowsocks proxy tunnel engine for secure communication" />
-                </service>
-            </application>
-        </manifest>
         EOF
 
     - name: Inject WhatsApp Theme Colors and Textures
@@ -189,7 +130,7 @@ jobs:
 
         cat << 'EOF' > app/src/main/res/drawable/btn_connected_glow.xml
         <?xml version="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://shape.android.com/apk/res/android"
+        <shape xmlns:android="http://schemas.android.com/apk/res/android"
             android:shape="oval">
             <solid android:color="#25D366" />
             <stroke android:width="4dp" android:color="#C8E6C9" />
