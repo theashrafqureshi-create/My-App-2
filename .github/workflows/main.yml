@@ -90,7 +90,7 @@ jobs:
             implementation 'com.google.android.material:material:1.11.0'
             implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
             
-            # 🎯 [FIXED BY ASHRAF LOGIC] जो mmkv.aar तुमने मैन्युअली libs फोल्डर में डाली है, उसे यहाँ लिंक कर दिया है!
+            // 🎯 यहाँ लोकल mmkv.aar फाइल को बिल्कुल सही ग्रैडल फॉर्मेट में लिंक कर दिया है
             implementation fileTree(dir: 'libs', include: ['*.aar'])
             
             implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
