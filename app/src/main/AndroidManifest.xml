@@ -39,13 +39,13 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [FIXED & BYPASSED] UPPERCASE 'VPN' के साथ इग्नोर टैग लगाया ताकि ग्रैडल भी पास हो और ऐप भी न क्रैश हो -->
+        <!-- 🎯 [FINAL COMPATIBILITY FIX] tools:node लगाकर पुराने टूल्स के सारे नखरे खत्म कर दिए -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="VPN"
             android:exported="false"
-            tools:ignore="WrongManifestParent">
+            tools:node="replace">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
