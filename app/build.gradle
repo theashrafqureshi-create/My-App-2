@@ -44,4 +44,7 @@ dependencies {
     // बारकोड स्कैनर और गैलरी QR इंजन चलाने के लिए ये दोनों लाइनें जोड़ी हैं:
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
     implementation 'com.google.zxing:core:3.4.1'
+
+    // Shadowsocks VPN इंजन के लिए MMKV स्थानीय स्टोरेज लिंक:
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
 }

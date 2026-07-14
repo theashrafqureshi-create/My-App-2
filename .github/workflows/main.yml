@@ -1,443 +1,50 @@
-name: Build Fixed Integrated Android Package
+name: Build WhatsApp VPN Release APK
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # इससे तुम जब चाहो गिटहब पर मैन्युअल बटन दबाकर भी बिल्ड चालू कर सकते हो
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      # 1. गिटहब सर्वर पर तुम्हारा सारा कोड चेकआउट करना
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: gradle
+      # 2. जावा 17 सेट करना (जो तुम्हारी build.gradle की रिक्वायरमेंट है)
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
 
-    - name: Configure Clean Gradle Settings
-      run: |
-        cat << 'EOF' > settings.gradle
-        pluginManagement {
-            repositories {
-                google()
-                mavenCentral()
-                gradlePluginPortal()
-            }
-        }
-        dependencyResolutionManagement {
-            repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
-            repositories {
-                google()
-                mavenCentral()
-                maven { url 'https://jitpack.io' }
-            }
-        }
-        rootProject.name = "My-App-2"
-        include ':app'
-        EOF
+      # 3. ग्रैडल रैपर और स्क्रिप्ट को चलने की परमिशन देना
+      - name: Grant Execute Permission for Gradlew
+        run: chmod +x gradlew
 
-    - name: Write Shadowsocks Compliant Gradle Structure
-      run: |
-        cat << 'EOF' > app/build.gradle
-        plugins {
-            id 'com.android.application'
-            id 'org.jetbrains.kotlin.android'
-        }
+      # 4. तुम्हारी शर्तों के मुताबिक 'Release APK' तैयार करना (बिना डिबग टैग के)
+      - name: Build Production Release APK
+        run: ./gradlew assembleRelease --no-daemon
 
-        android {
-            namespace 'com.ashraf.whatsappvpn'
-            compileSdk 34
+      # 5. बनी हुई एपीके फाइल को ढूंढकर उसे सुंदर नाम देना
+      - name: Prepare Dynamic Release Artifact
+        run: |
+          mkdir -p release_output
+          cp app/build/outputs/apk/release/app-release-unsigned.apk release_output/WhatsApp_VPN_Release.apk || cp app/build/outputs/apk/release/app-release.apk release_output/WhatsApp_VPN_Release.apk || echo "APK path format varied"
 
-            defaultConfig {
-                applicationId "com.ashraf.whatsappvpn"
-                minSdk 21
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-
-            buildTypes {
-                release {
-                    minifyEnabled false
-                    shrinkResources false
-                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-                }
-                debug {
-                    minifyEnabled false
-                    shrinkResources false
-                }
-            }
-            
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-            
-            kotlinOptions {
-                jvmTarget = '17'
-            }
-        }
-
-        dependencies {
-            implementation 'androidx.core:core-ktx:1.12.0'
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-            implementation 'com.google.android.material:material:1.11.0'
-            implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
-            
-            // 🎯 जो mmkv.aar तुमने मैन्युअली libs फोल्डर में डाली है, उसे यहाँ लिंक कर दिया है
-            implementation fileTree(dir: 'libs', include: ['*.aar'])
-            
-            implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
-            implementation 'com.google.zxing:core:3.4.1'
-        }
-        EOF
-
-    - name: Configure Manifest with Shadowsocks Service and Permissions
-      run: |
-        mkdir -p app/src/main
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-            xmlns:tools="http://schemas.google.com/tools">
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
-            <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-            <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-            
-            <application
-                android:allowBackup="true"
-                android:icon="@android:drawable/sym_def_app_icon"
-                android:roundIcon="@android:drawable/sym_def_app_icon"
-                android:label="WhatsApp VPN"
-                android:supportsRtl="true"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar"
-                tools:targetApi="34">
-                
-                <activity
-                    android:name="com.ashraf.whatsappvpn.ui.MainActivity"
-                    android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-
-                <activity
-                    android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
-                    android:exported="false" />
-
-                <activity
-                    android:name="com.journeyapps.barcodescanner.CaptureActivity"
-                    android:theme="@style/zxing_CaptureTheme"
-                    android:exported="false" />
-
-                <service 
-                    android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
-                    android:permission="android.permission.BIND_VPN_SERVICE"
-                    android:foregroundServiceType="specialUse"
-                    android:exported="false">
-                    <intent-filter>
-                        <action android:name="android.net.VpnService" />
-                    </intent-filter>
-                    
-                    <property 
-                        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                        android:value="Custom integrated local Shadowsocks proxy tunnel engine for secure communication" />
-                </service>
-            </application>
-        </manifest>
-        EOF
-
-    - name: Inject WhatsApp Theme Colors and Textures
-      run: |
-        mkdir -p app/src/main/res/values
-        cat << 'EOF' > app/src/main/res/values/colors.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <resources>
-            <color name="whatsapp_green">#075E54</color>
-            <color name="whatsapp_light_green">#25D366</color>
-            <color name="whatsapp_bg">#F4F7F5</color>
-            <color name="vpn_red">#E53935</color>
-            <color name="white">#FFFFFF</color>
-            <color name="black">#000000</color>
-            <color name="gray">#888888</color>
-        </resources>
-        EOF
-
-    - name: Inject Round Glow Button and Layout Background Styles
-      run: |
-        mkdir -p app/src/main/res/drawable
-        
-        cat << 'EOF' > app/src/main/res/drawable/btn_disconnected_glow.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://schemas.android.com/apk/res/android"
-            android:shape="oval">
-            <solid android:color="#E53935" />
-            <stroke android:width="4dp" android:color="#FFCDD2" />
-            <size android:width="140dp" android:height="140dp" />
-        </shape>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/drawable/btn_connected_glow.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://schemas.android.com/apk/res/android"
-            android:shape="oval">
-            <solid android:color="#25D366" />
-            <stroke android:width="4dp" android:color="#C8E6C9" />
-            <size android:width="140dp" android:height="140dp" />
-        </shape>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/drawable/banner_bg.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://schemas.android.com/apk/res/android">
-            <solid android:color="#FFFFFF" />
-            <corners android:radius="12dp" />
-            <stroke android:width="2dp" android:color="#075E54" />
-        </shape>
-        EOF
-
-        cat << 'EOF' > app/src/main/res/drawable/edit_text_border.xml
-        <?xml length="1.0" encoding="utf-8"?>
-        <shape xmlns:android="http://schemas.android.com/apk/res/android">
-            <solid android:color="#FFFFFF" />
-            <corners android:radius="6dp" />
-            <stroke android:width="1dp" android:color="#075E54" />
-        </shape>
-        EOF
-
-    - name: Inject WhatsApp Styled Layout with Greeting Banner and Settings Anchor
-      run: |
-        mkdir -p app/src/main/res/layout
-        cat << 'EOF' > app/src/main/res/layout/activity_main.xml
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="#F4F7F5">
-
-            <RelativeLayout
-                android:id="@+id/topBar"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="#075E54"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
-                
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="WhatsApp VPN"
-                    android:textColor="#FFFFFF"
-                    android:textSize="18sp"
-                    android:layout_centerVertical="true"
-                    android:textStyle="bold"/>
-
-                <Button
-                    android:id="@+id/btnSettings"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:text="⚙"
-                    android:textColor="#FFFFFF"
-                    android:background="@android:color/transparent"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-            </RelativeLayout>
-
-            <Button
-                android:id="@+id/btnConnect"
-                android:layout_width="140dp"
-                android:layout_height="140dp"
-                android:layout_centerInParent="true"
-                android:background="@drawable/btn_disconnected_glow"
-                android:text="CONNECT\nENGINE"
-                android:textColor="#FFFFFF"
-                android:gravity="center"
-                android:textStyle="bold"
-                android:textSize="14sp"/>
-
-            <RelativeLayout
-                android:id="@+id/greetingBanner"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignParentBottom="true"
-                android:layout_margin="16dp"
-                android:padding="16dp"
-                android:background="@drawable/banner_bg"
-                android:visibility="visible">
-
-                <TextView
-                    android:id="@+id/txtWelcome"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Welcome to WhatsApp VPN!"
-                    android:textColor="#075E54"
-                    android:textSize="16sp"
-                    android:textStyle="bold"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_below="@id/txtWelcome"
-                    android:layout_marginTop="4dp"
-                    android:layout_toStartOf="@+id/btnCloseBanner"
-                    android:textColor="#888888"
-                    android:text="Secure your chats and calls instantly with our fully integrated proxy tunnel."
-                    android:textSize="12sp"/>
-
-                <Button
-                    android:id="@+id/btnCloseBanner"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_alignParentEnd="true"
-                    android:layout_alignParentTop="true"
-                    android:text="X"
-                    android:textColor="#E53935"
-                    android:background="@android:color/transparent"
-                    android:textStyle="bold"
-                    android:textSize="14sp"/>
-            </RelativeLayout>
-
-        </RelativeLayout>
-        EOF
-
-    - name: Inject Full Integration Settings Layout Page
-      run: |
-        cat << 'EOF' > app/src/main/res/layout/activity_settings.xml
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:background="#F4F7F5">
-
-            <RelativeLayout
-                android:id="@+id/settingsTopBar"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:background="#075E54"
-                android:padding="16dp">
-                
-                <TextView
-                    android:id="@+id/btnBack"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="←  "
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:layout_centerVertical="true"/>
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_toEndOf="@id/btnBack"
-                    android:text="VPN Configuration Settings"
-                    android:textColor="#FFFFFF"
-                    android:textSize="18sp"
-                    android:layout_centerVertical="true"
-                    android:textStyle="bold"/>
-            </RelativeLayout>
-
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Import Shadowsocks Configuration"
-                        android:textColor="#075E54"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <EditText
-                        android:id="@+id/etVpnLink"
-                        android:layout_width="match_parent"
-                        android:layout_height="100dp"
-                        android:background="@drawable/edit_text_border"
-                        android:hint="Paste your ss:// 3X proxy server configuration link here..."
-                        android:padding="12dp"
-                        android:gravity="top|start"
-                        android:textSize="14sp"
-                        android:textColor="#000000" />
-
-                    <Button
-                        android:id="@+id/btnSaveLink"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:backgroundTint="#075E54"
-                        android:text="SAVE CONFIGURATION LINK"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginTop="10dp"
-                        android:textStyle="bold"/>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#DDDDDD"
-                        android:layout_marginTop="20dp"
-                        android:layout_marginBottom="20dp"/>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Scan Configuration Barcode"
-                        android:textColor="#075E54"
-                        android:textStyle="bold"
-                        android:textSize="16sp"
-                        android:layout_marginBottom="8dp"/>
-
-                    <Button
-                        android:id="@+id/btnOpenScanner"
-                        android:layout_width="match_parent"
-                        android:layout_height="55dp"
-                        android:backgroundTint="#25D366"
-                        android:text="📷  OPEN QR CAMERA SCANNER"
-                        android:textColor="#FFFFFF"
-                        android:textStyle="bold"
-                        android:layout_marginBottom="10dp"/>
-
-                    <Button
-                        android:id="@+id/btnOpenGallery"
-                        android:layout_width="match_parent"
-                        android:layout_height="55dp"
-                        android:backgroundTint="#FFFFFF"
-                        android:text="🖼️  CHOOSE FROM GALLERY SCREENSHOT"
-                        android:textColor="#075E54"
-                        android:textStyle="bold"/>
-                </LinearLayout>
-            </ScrollView>
-        </LinearLayout>
-        EOF
-
-    - name: Build Android App Compilation Engine
-      run: |
-        chmod +x gradlew
-        ./gradlew assembleDebug
-
-    - name: Rename APK Output
-      run: |
-        mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/WhatsApp-VPN.apk
-
-    - name: Upload Built APK Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: WhatsApp-VPN-Application
-        path: app/build/outputs/apk/debug/WhatsApp-VPN.apk
+      # 6. गिटहब के Artifacts सेक्शन में 'WhatsApp_VPN_Release.apk' को डाउनलोड के लिए लाइव करना
+      - name: Upload WhatsApp VPN Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WhatsApp_VPN_Release
+          path: release_output/WhatsApp_VPN_Release.apk
+          if-no-files-found: error
+          retention-days: 7

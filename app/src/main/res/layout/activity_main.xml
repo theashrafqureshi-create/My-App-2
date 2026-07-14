@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/manifest/android"
-    android:layout_width="match_滿足"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F7FA"
     android:padding="24dp">
@@ -27,16 +27,52 @@
         android:textColor="#7F8C8D"
         android:textSize="18sp" />
 
+    <!-- ग्रीटिंग बैनर और क्लोज बटन जो MainActivity.kt में लोड हो रहे हैं -->
+    <RelativeLayout
+        android:id="@+id/greetingBanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/tvStatus"
+        android:layout_marginTop="20dp"
+        android:background="#E1F5FE"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome to WhatsApp VPN!"
+            android:textColor="#0288D1"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnCloseBanner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:text="Close" />
+    </RelativeLayout>
+
     <Button
         android:id="@+id/btnConnect"
         android:layout_width="200dp"
         android:layout_height="200dp"
         android:layout_centerInParent="true"
         android:background="@android:color/transparent"
-        android:text="CONNECT"
+        android:text="CONNECT\nENGINE"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         android:textStyle="bold"
         android:elevation="8dp" />
+
+    <!-- सेटिंग्स बटन जो MainActivity.kt में डिफाइन है -->
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="40dp"
+        android:text="Settings" />
 
 </RelativeLayout>

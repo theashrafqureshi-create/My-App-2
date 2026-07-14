@@ -25,13 +25,18 @@ public class ShadowsocksVpnService extends VpnService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        // 🎯 [CRASH FIX] अगर यूजर ने डिस्कनेक्ट बटन दबाया है, तो सर्विस को तुरंत रोको
+        if (intent != null && "STOP_VPN".equals(intent.getAction())) {
+            Log.d(TAG, "Stopping VPN Service via Action");
+            stopVpn();
+            return START_NOT_STICKY;
+        }
+
         Log.d(TAG, "VPN Service Started Manually");
 
-        // SharedPreferences से सेव किया हुआ ss:// लिंक पढ़ना
         SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
         String savedLink = sharedPref.getString("ss_link", "");
 
-        // 🎯 [SMART CHECK] अशरफ भाई का नियम: अगर लिंक खाली है, तो क्रैश मत हो, यूजर को बैनर/टोस्ट दिखाओ
         if (savedLink == null || savedLink.trim().isEmpty()) {
             Toast.makeText(this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show();
             stopSelf();
@@ -39,8 +44,6 @@ public class ShadowsocksVpnService extends VpnService {
         }
 
         stopVpn();
-
-        // Android 14 क्रैश फिक्स: प्योर एंड्रॉइड का नोटिफिकेशन चैनल बनाना
         createNotificationChannel();
         
         Notification notification;
@@ -59,14 +62,12 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 [FIXED] कंपाइलर और रनटाइम क्रैश फिक्स: यहाँ मैनिफेस्ट के specialUse से मैच करने के लिए सीधा नंबर 1073741824 डाल दिया है।
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(1, notification, 1073741824);
         } else {
             startForeground(1, notification);
         }
 
-        // 🎯 [BARCODE DECODER ENGINE] डमी सर्वर हटाकर असली ss:// लिंक को पार्स करने का पूरा सामान
         String serverIp = "127.0.0.1";
         int serverPort = 8388;
         String password = "your_password";
@@ -74,7 +75,6 @@ public class ShadowsocksVpnService extends VpnService {
 
         try {
             if (savedLink.startsWith("ss://")) {
-                // अगर लिंक के पीछे '#' टैग या नाम है तो उसे हटाकर साफ URI बनाना
                 String cleanLink = savedLink;
                 if (cleanLink.contains("#")) {
                     cleanLink = cleanLink.split("#")[0];
@@ -83,7 +83,6 @@ public class ShadowsocksVpnService extends VpnService {
                 URI uri = URI.create(cleanLink);
                 String userInfo = uri.getUserInfo();
                 
-                // अगर यूजर इन्फो Base64 एन्क्रिप्टेड है तो उसे खोलना (जैसे chacha20:ashraf2026)
                 if (userInfo != null) {
                     if (!userInfo.contains(":")) {
                         try {
@@ -136,11 +135,9 @@ public class ShadowsocksVpnService extends VpnService {
                .addAddress("10.0.0.2", 24)
                .addRoute("0.0.0.0", 0);
 
-        // तुम्हारा DNS कोड
         builder.addDnsServer("8.8.8.8");
         builder.addDnsServer("1.1.1.1");
 
-        // तुम्हारा व्हाट्सएप फ़िल्टर कोड
         try {
             builder.addAllowedApplication("com.whatsapp");
         } catch (PackageManager.NameNotFoundException e) {
