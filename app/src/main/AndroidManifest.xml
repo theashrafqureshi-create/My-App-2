@@ -39,11 +39,11 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [FIXED] specialUse हटाकर एंड्रॉइड 14 का ऑफिशियल vpn टाइप सेट कर दिया है ताकि क्रैश न हो -->
+        <!-- 🎯 [FIXED] 'vpn' को बड़े अक्षरों में 'VPN' लॉक कर दिया है ताकि एंड्रॉइड रीसोर्स लिंकिंग एरर खत्म हो जाए -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="vpn"
+            android:foregroundServiceType="VPN"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
