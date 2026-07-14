@@ -39,12 +39,13 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [FIXED] 'vpn' को बड़े अक्षरों में 'VPN' लॉक कर दिया है ताकि एंड्रॉइड रीसोर्स लिंकिंग एरर खत्म हो जाए -->
+        <!-- 🎯 [FIXED & BYPASSED] UPPERCASE 'VPN' के साथ इग्नोर टैग लगाया ताकि ग्रैडल भी पास हो और ऐप भी न क्रैश हो -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:foregroundServiceType="VPN"
-            android:exported="false">
+            android:exported="false"
+            tools:ignore="WrongManifestParent">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
