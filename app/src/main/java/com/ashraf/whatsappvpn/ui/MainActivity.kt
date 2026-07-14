@@ -24,14 +24,11 @@ class MainActivity : AppCompatActivity() {
 
     private var isConnected = false
 
-    // 🎯 Android 14 के लिए सुरक्षित परमिशन लॉन्चर (फिक्स्ड रिस्पॉन्स चेकिंग)
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { _ ->
-        // एंड्रॉइड वीपीएन डायलॉग के बाद दोबारा सुरक्षा जांच करना सबसे बेस्ट तरीका है
         val intent = VpnService.prepare(this)
         if (intent == null) {
-            // अगर दोबारा चेक करने पर इंटेंट नल है, मतलब परमिशन पक्का मिल चुकी है
             Handler(Looper.getMainLooper()).postDelayed({
                 handleVpnConnectionSuccess()
             }, 200)
@@ -64,20 +61,16 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-        // वीपीएन कनेक्ट बटन का लॉजिक
         btnConnect.setOnClickListener {
             if (!isConnected) {
-                // 🎯 [SMART VALIDATION] सर्विस चालू करने से पहले चेक करो कि क्या लिंक सच में सेव है
                 val sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE)
                 val savedLink = sharedPref.getString("ss_link", "")
 
                 if (savedLink.isNullOrBlank()) {
-                    // अगर लिंक नहीं है, तो सर्विस स्टार्ट मत करो, सीधे स्क्रीन पर बैनर अलर्ट टोस्ट दिखाओ
                     Toast.makeText(this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
                     return@setOnClickListener
                 }
 
-                // सुरक्षित तरीके से वीपीएन परमिशन की जांच
                 val intent = VpnService.prepare(this)
                 if (intent != null) {
                     vpnPermissionLauncher.launch(intent)
@@ -109,15 +102,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startVpnService() {
-        // 🎯 [FIXED] कोट्लिन के लिए सही सिंटैक्स
-        val intent = Intent(this, ShadowsocksVpnService::class.java)
+        val sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE)
+        val savedLink = sharedPref.getString("ss_link", "")
+
+        // 🎯 [FIXED] लिंक को सीधे Intent में डालकर सर्विस को भेजा ताकि बैकएंड को डेटा मिल सके
+        val intent = Intent(this, ShadowsocksVpnService::class.java).apply {
+            putExtra("SERVER_LINK", savedLink)
+        }
         ContextCompat.startForegroundService(this, intent)
     }
 
     private fun stopVpnService() {
-        // 🎯 [FIXED] कोट्लिन के लिए सही सिंटैक्स
         val intent = Intent(this, ShadowsocksVpnService::class.java)
-        // 🎯 सर्विस को साफ़-साफ़ बंद होने का एक्शन भेजना
         intent.action = "STOP_VPN"
         stopService(intent)
     }

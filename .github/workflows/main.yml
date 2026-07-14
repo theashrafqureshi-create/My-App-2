@@ -1,4 +1,4 @@
-name: Build WhatsApp VPN Release APK
+name: Build WhatsApp VPN Debug APK
 
 on:
   push:
@@ -7,18 +7,18 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch: # इससे तुम जब चाहो गिटहब पर मैन्युअल बटन दबाकर भी बिल्ड चालू कर सकते हो
+  workflow_dispatch: # इससे आप जब चाहें गिटहब पर मैन्युअल बटन दबाकर भी बिल्ड चालू कर सकते हैं
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. गिटहब सर्वर पर तुम्हारा सारा कोड चेकआउट करना
+      # 1. गिटहब सर्वर पर आपका सारा कोड चेकआउट करना
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      # 2. जावा 17 सेट करना (जो तुम्हारी build.gradle की रिक्वायरमेंट है)
+      # 2. जावा 17 सेट करना (जो आपकी build.gradle की रिक्वायरमेंट है)
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -30,21 +30,21 @@ jobs:
       - name: Grant Execute Permission for Gradlew
         run: chmod +x gradlew
 
-      # 4. तुम्हारी शर्तों के मुताबिक 'Release APK' तैयार करना (बिना डिबग टैग के)
-      - name: Build Production Release APK
-        run: ./gradlew assembleRelease --no-daemon
+      # 4. 🎯 [FIXED] टेस्टिंग के लिए डिबग एपीके तैयार करना (जो फोन में तुरंत इंस्टॉल हो जाएगा)
+      - name: Build Production Debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
-      # 5. बनी हुई एपीके फाइल को ढूंढकर उसे सुंदर नाम देना
-      - name: Prepare Dynamic Release Artifact
+      # 5. 🎯 [FIXED] बनी हुई डिबग एपीके फाइल को ढूंढकर उसे सुंदर नाम देना
+      - name: Prepare Dynamic Debug Artifact
         run: |
-          mkdir -p release_output
-          cp app/build/outputs/apk/release/app-release-unsigned.apk release_output/WhatsApp_VPN_Release.apk || cp app/build/outputs/apk/release/app-release.apk release_output/WhatsApp_VPN_Release.apk || echo "APK path format varied"
+          mkdir -p debug_output
+          cp app/build/outputs/apk/debug/app-debug.apk debug_output/WhatsApp_VPN_Debug.apk || echo "APK path format varied"
 
-      # 6. गिटहब के Artifacts सेक्शन में 'WhatsApp_VPN_Release.apk' को डाउनलोड के लिए लाइव करना
-      - name: Upload WhatsApp VPN Release APK
+      # 6. 🎯 [FIXED] गिटहब के Artifacts सेक्शन में 'WhatsApp_VPN_Debug.apk' को डाउनलोड के लिए लाइव करना
+      - name: Upload WhatsApp VPN Debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: WhatsApp_VPN_Release
-          path: release_output/WhatsApp_VPN_Release.apk
+          name: WhatsApp_VPN_Debug
+          path: debug_output/WhatsApp_VPN_Debug.apk
           if-no-files-found: error
           retention-days: 7

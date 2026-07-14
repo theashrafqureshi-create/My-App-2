@@ -5,11 +5,12 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 import android.util.Log;
@@ -34,11 +35,13 @@ public class ShadowsocksVpnService extends VpnService {
 
         Log.d(TAG, "VPN Service Started Manually");
 
-        SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
-        String savedLink = sharedPref.getString("ss_link", "");
+        // 🎯 [FIXED] SharedPreferences की जगह सीधे MainActivity के लाइव Intent से लिंक रिसीव किया
+        final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
 
         if (savedLink == null || savedLink.trim().isEmpty()) {
-            Toast.makeText(this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show();
+            new Handler(Looper.getMainLooper()).post(() -> 
+                Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
+            );
             stopSelf();
             return START_NOT_STICKY;
         }
@@ -62,7 +65,7 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 [एंड्रॉइड 14 क्रैश फिक्स]: डिफ़ॉल्ट नंबर हटाकर सही वीपीएन सर्विस टाइप लॉक किया
+        // 🎯 [FIXED] अब यह मैनिफेस्ट के 'vpn' टाइप से 100% मैच करेगा और क्रैश नहीं होगा
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
         } else {
@@ -92,7 +95,7 @@ public class ShadowsocksVpnService extends VpnService {
                             try {
                                 userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
                             } catch (Exception ex) {
-                                Log.e(TAG, "Base64 decoding failed, using raw userInfo");
+                                Log.e(TAG, "Base64 decoding failed");
                             }
                         }
                     }
@@ -109,7 +112,7 @@ public class ShadowsocksVpnService extends VpnService {
                 if (serverPort == -1) {
                     serverPort = 8388;
                 }
-                Log.d(TAG, "Successfully Parsed Link -> IP: " + serverIp + ", Port: " + serverPort + ", Method: " + method);
+                Log.d(TAG, "Successfully Parsed Link -> IP: " + serverIp + ", Port: " + serverPort);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
@@ -139,20 +142,19 @@ public class ShadowsocksVpnService extends VpnService {
         builder.addDnsServer("8.8.8.8");
         builder.addDnsServer("1.1.1.1");
 
-        // 🎯 [व्हाट्सएप स्प्लिट टनलिंग सेफ चेक]: ऐप इंस्टॉल है या नहीं, रन-टाइम पर सुरक्षित जांच
         PackageManager pm = getPackageManager();
         try {
             pm.getPackageInfo("com.whatsapp", 0);
             builder.addAllowedApplication("com.whatsapp");
         } catch (Exception e) {
-            Log.e(TAG, "Normal WhatsApp not installed or not available");
+            Log.e(TAG, "Normal WhatsApp not installed");
         }
 
         try {
             pm.getPackageInfo("com.whatsapp.w4b", 0);
             builder.addAllowedApplication("com.whatsapp.w4b");
         } catch (Exception e) {
-            Log.e(TAG, "WhatsApp Business not installed or not available");
+            Log.e(TAG, "WhatsApp Business not installed");
         }
 
         vpnInterface = builder.establish();
