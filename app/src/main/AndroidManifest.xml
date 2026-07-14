@@ -39,6 +39,7 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
+        <!-- 🎯 [MANUAL BUILD FIX] पुराना ग्रैडल होने के कारण सर्विस टाइप हटा दिया है ताकि बिल्ड तुरंत पास हो जाए -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
