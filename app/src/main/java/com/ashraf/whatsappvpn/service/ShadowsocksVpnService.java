@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.ParcelFileDescriptor;
@@ -25,7 +26,6 @@ public class ShadowsocksVpnService extends VpnService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 🎯 [CRASH FIX] अगर यूजर ने डिस्कनेक्ट बटन दबाया है, तो सर्विस को तुरंत रोको
         if (intent != null && "STOP_VPN".equals(intent.getAction())) {
             Log.d(TAG, "Stopping VPN Service via Action");
             stopVpn();
@@ -62,8 +62,9 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, 1073741824);
+        // 🎯 [एंड्रॉइड 14 क्रैश फिक्स]: डिफ़ॉल्ट नंबर हटाकर सही वीपीएन सर्विस टाइप लॉक किया
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
         } else {
             startForeground(1, notification);
         }
@@ -111,7 +112,7 @@ public class ShadowsocksVpnService extends VpnService {
                 Log.d(TAG, "Successfully Parsed Link -> IP: " + serverIp + ", Port: " + serverPort + ", Method: " + method);
             }
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing Shadowsocks URL, falling back to secure local bridge: " + e.getMessage());
+            Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
         }
 
         localServer = new ShadowsocksLocalServer();
@@ -131,23 +132,27 @@ public class ShadowsocksVpnService extends VpnService {
 
     private void runVpn() throws IOException {
         Builder builder = new Builder();
-        builder.setSession("WithAppVPN")
+        builder.setSession("WhatsAppVPN")
                .addAddress("10.0.0.2", 24)
                .addRoute("0.0.0.0", 0);
 
         builder.addDnsServer("8.8.8.8");
         builder.addDnsServer("1.1.1.1");
 
+        // 🎯 [व्हाट्सएप स्प्लिट टनलिंग सेफ चेक]: ऐप इंस्टॉल है या नहीं, रन-टाइम पर सुरक्षित जांच
+        PackageManager pm = getPackageManager();
         try {
+            pm.getPackageInfo("com.whatsapp", 0);
             builder.addAllowedApplication("com.whatsapp");
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "Normal WhatsApp not installed");
+        } catch (Exception e) {
+            Log.e(TAG, "Normal WhatsApp not installed or not available");
         }
 
         try {
+            pm.getPackageInfo("com.whatsapp.w4b", 0);
             builder.addAllowedApplication("com.whatsapp.w4b");
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e(TAG, "WhatsApp Business not installed");
+        } catch (Exception e) {
+            Log.e(TAG, "WhatsApp Business not installed or not available");
         }
 
         vpnInterface = builder.establish();
