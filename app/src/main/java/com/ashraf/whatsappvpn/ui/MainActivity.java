@@ -19,7 +19,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
@@ -47,25 +46,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🛠️ [FORCED UI FIX] अब एरर को सीधे MainLooper के जरिए दिखाएंगे, ताकि वो हैंग न हो
-        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-            Log.e("APP_CRASH", "Crash detected: ", throwable);
-            final String errorMsg = android.util.Log.getStackTraceString(throwable);
+        // 🛠️ क्रैश पकड़ने वाला टोस्ट कोड वापस आ गया है!
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Looper.prepare();
+                        Toast.makeText(getApplicationContext(), 
+                            "CRASH: " + throwable.toString(), 
+                            Toast.LENGTH_LONG).show();
+                        Looper.loop();
+                    }
+                }).start();
 
-            new Handler(Looper.getMainLooper()).post(() -> {
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-                builder.setTitle("💥 APP CRASHED!");
-                builder.setMessage(errorMsg);
-                builder.setCancelable(false);
-                builder.setPositiveButton("OK", (dialog, which) -> {
-                    android.os.Process.killProcess(android.os.Process.myPid());
-                    System.exit(10);
-                });
-                builder.show();
-            });
-
-            // ऐप को तुरंत बंद न होने दें ताकि यूजर पढ़ सके
-            try { Thread.sleep(60000); } catch (InterruptedException e) {}
+                try { Thread.sleep(4000); } catch (InterruptedException e) {}
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(10);
+            }
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
