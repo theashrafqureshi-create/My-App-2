@@ -16,7 +16,6 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="WhatsApp VPN"
-        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         tools:targetApi="34">
@@ -32,8 +31,7 @@
 
         <activity
             android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
-            android:exported="true"
-            tools:node="merge" />
+            android:exported="false" />
 
         <activity
             android:name="com.journeyapps.barcodescanner.CaptureActivity"
@@ -43,7 +41,6 @@
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="vpn"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
