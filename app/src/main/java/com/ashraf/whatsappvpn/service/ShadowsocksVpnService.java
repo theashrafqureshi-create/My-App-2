@@ -63,7 +63,6 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 [FIXED] ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN की जगह सीधे 16 का इस्तेमाल किया
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             startForeground(1, notification, 16);
         } else {
