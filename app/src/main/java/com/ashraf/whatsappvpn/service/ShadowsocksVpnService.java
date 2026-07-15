@@ -63,7 +63,11 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        startForeground(1, notification);
+        if (Build.VERSION.SDK_INT >= 34) {
+            startForeground(1, notification, 1073741824);
+        } else {
+            startForeground(1, notification);
+        }
 
         String serverIp = "127.0.0.1";
         int serverPort = 8388;
