@@ -22,6 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+// 🎯 [CRITICAL FIX] सही R क्लास इम्पोर्ट की जिससे एरर खत्म हो जाएगा
 import com.ashraf.whatsappvpn.R;
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService;
 
