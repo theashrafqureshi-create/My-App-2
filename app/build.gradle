@@ -4,9 +4,13 @@ plugins {
     // बाकी प्लगइन्स...
 }
 
+// पुराना कोड (जो एरर दे रहा है)
 android {
-    namespace 'com.ashraf.whatsappvpn'
-    compileSdk 34
+    ...
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
 
     defaultConfig {
         applicationId "com.ashraf.whatsappvpn"
