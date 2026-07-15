@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.ashraf.myapp'
+    namespace 'com.ashraf.whatsappvpn'
     compileSdk 34
     
     defaultConfig {
