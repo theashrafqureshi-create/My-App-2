@@ -27,7 +27,7 @@
         android:textColor="#7F8C8D"
         android:textSize="18sp" />
 
-    <!-- ग्रीटिंग बैनर और क्लोज बटन जो MainActivity में लोड हो रहे हैं -->
+    <!-- ग्रीटिंग बैनर -->
     <RelativeLayout
         android:id="@+id/greetingBanner"
         android:layout_width="match_parent"
@@ -53,7 +53,7 @@
             android:text="Close" />
     </RelativeLayout>
 
-    <!-- बटन का बैकग्राउंड सीधे ड्राएबल ग्लो फाइल से सिंक है -->
+    <!-- कनेक्ट बटन -->
     <Button
         android:id="@+id/btnConnect"
         android:layout_width="200dp"
@@ -66,7 +66,7 @@
         android:textStyle="bold"
         android:elevation="8dp" />
 
-    <!-- सेटिंग्स बटन जो MainActivity में डिफाइन है -->
+    <!-- सेटिंग्स बटन -->
     <Button
         android:id="@+id/btnSettings"
         android:layout_width="wrap_content"
