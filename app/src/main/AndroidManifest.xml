@@ -11,8 +11,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
+    <!-- 🎯 [FIXED] android:name में पूरा पाथ लिख दिया है ताकि ऐप को अपनी स्टार्टअप क्लास बिना किसी कन्फ्यूजन के मिल जाए -->
     <application
-        android:name=".AppConfig"
+        android:name="com.ashraf.whatsappvpn.AppConfig"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="WhatsApp VPN"
@@ -39,7 +40,6 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [FIXED] जावा कोड से मैच करने के लिए foregroundServiceType="vpn" को अनिवार्य रूप से जोड़ दिया है ताकि ऐप क्रैश न हो -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
