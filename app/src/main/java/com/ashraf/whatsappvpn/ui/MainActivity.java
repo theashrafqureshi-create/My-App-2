@@ -22,7 +22,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-// 🎯 [CRITICAL FIX] सही R क्लास इम्पोर्ट की जिससे एरर खत्म हो जाएगा
+// 🎯 सही R क्लास इम्पोर्ट
 import com.ashraf.whatsappvpn.R;
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService;
 
@@ -46,6 +46,32 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // 🛠️ [CRITICAL FIX] क्रैश पकड़ने वाला हैंडलर यहाँ जोड़ दिया है
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                // लॉग में एरर रिकॉर्ड करने के लिए
+                Log.e("APP_CRASH", "Crash detected: ", throwable);
+                
+                // स्क्रीन पर बड़ा सा एरर मैसेज (Toast) दिखाने के लिए ताकि मोबाइल पर दिख जाए
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Looper.prepare();
+                        Toast.makeText(getApplicationContext(), 
+                            "💥 APP CRASHED!\nError: " + throwable.toString(), 
+                            Toast.LENGTH_LONG).show();
+                        Looper.loop();
+                    }
+                }).start();
+
+                // मैसेज पढ़ने के लिए ऐप को 4 सेकंड होल्ड पर रखेगा, फिर बंद करेगा
+                try { Thread.sleep(4000); } catch (InterruptedException e) {}
+                android.os.Process.killProcess(android.os.Process.myPid());
+                System.exit(10);
+            }
+        });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
