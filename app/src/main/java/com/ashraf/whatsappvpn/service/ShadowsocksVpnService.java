@@ -69,10 +69,15 @@ public class ShadowsocksVpnService extends VpnService {
             startForeground(1, notification);
         }
 
-        String serverIp = "127.0.0.1";
-        int serverPort = 8388;
-        String password = "your_password";
-        String method = "AES";
+        final String finalServerIp;
+        final int finalServerPort;
+        final String finalPassword;
+        final String finalMethod;
+
+        String tempServerIp = "127.0.0.1";
+        int tempServerPort = 8388;
+        String tempPassword = "your_password";
+        String tempMethod = "AES";
 
         try {
             if (savedLink.startsWith("ss://")) {
@@ -99,27 +104,32 @@ public class ShadowsocksVpnService extends VpnService {
                     
                     if (userInfo.contains(":")) {
                         String[] parts = userInfo.split(":", 2);
-                        method = parts[0];
-                        password = parts[1];
+                        tempMethod = parts[0];
+                        tempPassword = parts[1];
                     }
                 }
                 
-                serverIp = uri.getHost();
-                serverPort = uri.getPort();
-                if (serverPort == -1) {
-                    serverPort = 8388;
+                tempServerIp = uri.getHost();
+                tempServerPort = uri.getPort();
+                if (tempServerPort == -1) {
+                    tempServerPort = 8388;
                 }
-                Log.d(TAG, "Successfully Parsed Link -> IP: " + serverIp + ", Port: " + serverPort);
+                Log.d(TAG, "Successfully Parsed Link -> IP: " + tempServerIp + ", Port: " + tempServerPort);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
         }
 
+        finalServerIp = tempServerIp;
+        finalServerPort = tempServerPort;
+        finalPassword = tempPassword;
+        finalMethod = tempMethod;
+
         localServer = new ShadowsocksLocalServer();
-        localServer.startServer(serverIp, serverPort, password, method);
 
         vpnThread = new Thread(() -> {
             try {
+                localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
                 runVpn();
             } catch (Exception e) {
                 Log.e(TAG, "Error running VPN: " + e.getMessage());
