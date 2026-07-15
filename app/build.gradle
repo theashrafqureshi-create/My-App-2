@@ -1,7 +1,7 @@
+// नया सुधरा हुआ कोड
 plugins {
-    // 🎯 [FIXED] प्लगइन्स को बिल्कुल सटीक 8.4.0 वर्जन पर सेट कर दिया है ताकि gradle-wrapper.properties (8.4) से मैच हो जाए
-    id 'com.android.application' version '8.4.0'
-    id 'org.jetbrains.kotlin.android' version '1.9.22'
+    id 'com.android.application'  // <--- यहाँ से 'version' वाला हिस्सा पूरी तरह हटा दिया
+    // बाकी प्लगइन्स...
 }
 
 android {
