@@ -27,73 +27,12 @@ jobs:
         if [ -f app/build.gradle ]; then
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
-          # MMKV लाइब्रेरी फाइल का पाथ सुनिश्चित करना (तुम्हारे libs फोल्डर में होनी चाहिए)
-          sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")\n    implementation "com.journeyapps:zxing-android-embedded:4.3.0"\n    implementation "com.google.zxing:core:3.4.1"' app/build.gradle
+          # पक्का करें कि mmkv और बाकी डिपेंडेंसीज़ सही से एडिटर में एड हों
+          sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")' app/build.gradle
         fi
 
-    - name: Generate Shadowsocks Manifest
-      run: |
-        mkdir -p app/src/main
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <?xml version="1.0" encoding="utf-8"?>
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.google.com/tools">
-            <uses-permission android:name="android.permission.CAMERA" />
-            <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-            <uses-permission android:name="android.permission.BIND_VPN_SERVICE" tools:ignore="ProtectedPermissions" />
-            
-            <application android:allowBackup="true" android:label="WhatsApp VPN" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                <activity android:name="com.ashraf.whatsappvpn.ui.MainActivity" android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-                <service android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService" android:permission="android.permission.BIND_VPN_SERVICE" android:exported="false">
-                    <intent-filter><action android:name="android.net.VpnService" /></intent-filter>
-                </service>
-            </application>
-        </manifest>
-        EOF
-
-    - name: Inject Shadowsocks UI and Engine
-      run: |
-        mkdir -p app/src/main/kotlin/com/ashraf/whatsappvpn/ui app/src/main/kotlin/com/ashraf/whatsappvpn/service
-        
-        # MainActivity.kt
-        cat << 'EOF' > app/src/main/kotlin/com/ashraf/whatsappvpn/ui/MainActivity.kt
-        package com.ashraf.whatsappvpn.ui
-        import android.os.Bundle
-        import android.widget.Button
-        import androidx.appcompat.app.AppCompatActivity
-        import com.ashraf.whatsappvpn.service.ShadowsocksVpnService
-        import android.content.Intent
-        class MainActivity : AppCompatActivity() {
-            override fun onCreate(savedInstanceState: Bundle?) {
-                super.onCreate(savedInstanceState)
-                val btn = Button(this)
-                btn.text = "START VPN"
-                setContentView(btn)
-                btn.setOnClickListener { startService(Intent(this, ShadowsocksVpnService::class.java)) }
-            }
-        }
-        EOF
-
-        # ShadowsocksVpnService.kt
-        cat << 'EOF' > app/src/main/kotlin/com/ashraf/whatsappvpn/service/ShadowsocksVpnService.kt
-        package com.ashraf.whatsappvpn.service
-        import android.net.VpnService
-        import android.content.Intent
-        class ShadowsocksVpnService : VpnService() {
-            override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-                val builder = Builder()
-                builder.addAddress("10.0.0.2", 24).addRoute("0.0.0.0", 0).establish()
-                return START_STICKY
-            }
-        }
-        EOF
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x gradlew
 
     - name: Build APK
       run: ./gradlew assembleDebug --no-daemon
@@ -103,4 +42,3 @@ jobs:
       with:
         name: my-app-apk
         path: app/build/outputs/apk/debug/app-debug.apk
-        
