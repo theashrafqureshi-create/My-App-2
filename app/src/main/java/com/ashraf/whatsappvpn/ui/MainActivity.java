@@ -82,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
         btnSettings.setOnClickListener(v -> {
             try {
                 Intent intent = new Intent();
-                intent.setClassName(MainActivity.this, "com.ashraf.whatsappvpn.ui.SettingsActivity");
+                // 🎯 [DYNAMIC PACKAGE FIX ADDED] - बिना किसी टाइपो एरर के सीधे सेटिंग्स एक्टिविटी खोलेगा
+                intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
                 startActivity(intent);
             } catch (Exception e) {
                 Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
