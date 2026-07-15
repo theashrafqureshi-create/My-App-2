@@ -1,24 +1,21 @@
-// नया सुधरा हुआ कोड
 plugins {
-    id 'com.android.application'  // <--- यहाँ से 'version' वाला हिस्सा पूरी तरह हटा दिया
-    // बाकी प्लगइन्स...
+    id 'com.android.application'
+    // अगर यहाँ kotlin-android या कोई और प्लगइन है तो वो रहेगा, पर अंत में ब्रैकेट बंद होना चाहिए
 }
 
-// पुराना कोड (जो एरर दे रहा है)
 android {
-    ...
-    kotlinOptions {
-        jvmTarget = '17'
-    }
-}
-
+    namespace 'com.ashraf.myapp' // जो भी तुम्हारा पैकेज नेम है
+    compileSdk 34
+    
     defaultConfig {
-        applicationId "com.ashraf.whatsappvpn"
-        minSdk 21
+        applicationId "com.ashraf.myapp"
+        minSdk 26
         targetSdk 34
         versionCode 1
         versionName "1.0"
     }
+    // ... बाकी कोड नीचे रहेगा
+}
 
     buildTypes {
         release {
