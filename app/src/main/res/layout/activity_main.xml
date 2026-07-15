@@ -1,79 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F5F7FA"
-    android:padding="24dp">
+    android:padding="20dp">
 
-    <TextView
-        android:id="@+id/tvAppName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="60dp"
-        android:text="@string/app_name"
-        android:textColor="#075E54"
-        android:textSize="32sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/tvAppName"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="12dp"
-        android:text="Disconnected"
-        android:textColor="#7F8C8D"
-        android:textSize="18sp" />
-
-    <!-- ग्रीटिंग बैनर और क्लोज बटन जो MainActivity में लोड हो रहे हैं -->
+    <!-- बैक बटन और टाइटल -->
     <RelativeLayout
-        android:id="@+id/greetingBanner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/tvStatus"
-        android:layout_marginTop="20dp"
-        android:background="#E1F5FE"
-        android:padding="12dp"
-        android:visibility="gone">
+        android:layout_marginBottom="24dp">
+
+        <TextView
+            android:id="@+id/btnBack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="← Back"
+            android:textColor="#075E54"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:padding="8dp"
+            android:layout_alignParentStart="true" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Welcome to WhatsApp VPN!"
-            android:textColor="#0288D1"
-            android:textSize="14sp" />
-
-        <Button
-            android:id="@+id/btnCloseBanner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:text="Close" />
+            android:text="VPN Settings"
+            android:textColor="#333333"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_centerInParent="true" />
     </RelativeLayout>
 
-    <!-- 🎯 [FIXED] बटन का बैकग्राउंड सीधे ड्राएबल ग्लो फाइल से सिंक कर दिया है -->
-    <Button
-        android:id="@+id/btnConnect"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_centerInParent="true"
-        android:background="@drawable/btn_disconnected_glow"
-        android:text="CONNECT\nENGINE"
-        android:textColor="#FFFFFF"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:elevation="8dp" />
-
-    <!-- सेटिंग्स बटन जो MainActivity में डिफाइन है -->
-    <Button
-        android:id="@+id/btnSettings"
+    <!-- इनपुट बॉक्स -->
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="40dp"
-        android:text="Settings" />
+        android:text="Shadowsocks Link (ss://)"
+        android:textColor="#7F8C8D"
+        android:textSize="14sp"
+        android:layout_marginBottom="8dp" />
 
-</RelativeLayout>
+    <!-- 🎯 [FIXED] क्रैश करने वाला पुराना बैकग्राउंड हटा दिया है -->
+    <EditText
+        android:id="@+id/etVpnLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Paste ss:// link here..."
+        android:inputType="textUri"
+        android:padding="12dp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- सेव बटन -->
+    <Button
+        android:id="@+id/btnSaveLink"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SAVE CONFIG"
+        android:backgroundTint="#075E54"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Or Import Configuration"
+        android:textColor="#7F8C8D"
+        android:textSize="14sp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp" />
+
+    <!-- कैमरा स्कैनर बटन -->
+    <Button
+        android:id="@+id/btnOpenScanner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="SCAN QR CODE (CAMERA)"
+        android:backgroundTint="#0288D1"
+        android:textColor="#FFFFFF"
+        android:layout_marginBottom="12dp" />
+
+    <!-- गैलरी बटन -->
+    <Button
+        android:id="@+id/btnOpenGallery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="IMPORT FROM GALLERY"
+        android:backgroundTint="#7B1FA2"
+        android:textColor="#FFFFFF" />
+
+</LinearLayout>
