@@ -17,13 +17,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
-// 🎯 [CRITICAL FIX] सही R क्लास इम्पोर्ट
+// 🎯 सही R क्लास इम्पोर्ट
 import com.ashraf.whatsappvpn.R;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.MultiFormatReader;
@@ -48,6 +48,42 @@ public class SettingsActivity extends AppCompatActivity {
                     etVpnLink.setText(scannedText);
                     saveVpnConfig(scannedText);
                     Toast.makeText(SettingsActivity.this, "Scanned Configuration Loaded!", Toast.LENGTH_SHORT).show();
+                }
+            }
+    );
+
+    // 🎯 [FIXED] गैलरी पिकर को नए एक्टिविटी रिज़ल्ट लॉन्चर में बदल दिया ताकि क्रैश न हो
+    private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri imageUri = result.getData().getData();
+                    if (imageUri != null) {
+                        try {
+                            InputStream imageStream = getContentResolver().openInputStream(imageUri);
+                            Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
+
+                            int width = bitmap.getWidth();
+                            int height = bitmap.getHeight();
+                            int[] pixels = new int[width * height];
+                            bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+                            RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
+                            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+                            MultiFormatReader reader = new MultiFormatReader();
+
+                            Result qrResult = reader.decode(binaryBitmap);
+                            String scannedText = qrResult.getText();
+
+                            EditText etVpnLink = findViewById(R.id.etVpnLink);
+                            etVpnLink.setText(scannedText);
+                            saveVpnConfig(scannedText);
+                            Toast.makeText(this, "QR Code Processed from Gallery!", Toast.LENGTH_LONG).show();
+                        } catch (Exception e) {
+                            Toast.makeText(this, "Failed to parse QR Code from this image!", Toast.LENGTH_LONG).show();
+                            e.printStackTrace();
+                        }
+                    }
                 }
             }
     );
@@ -125,7 +161,7 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void openGalleryPicker() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        startActivityForResult(intent, 103);
+        galleryLauncher.launch(intent); // 🎯 [FIXED] यहाँ नए लॉन्चर का उपयोग किया है
     }
 
     @Override
@@ -136,40 +172,6 @@ public class SettingsActivity extends AppCompatActivity {
             if (requestCode == 102) openGalleryPicker();
         } else {
             Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == 103 && data != null) {
-            Uri imageUri = data.getData();
-            if (imageUri != null) {
-                try {
-                    InputStream imageStream = getContentResolver().openInputStream(imageUri);
-                    Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
-
-                    int width = bitmap.getWidth();
-                    int height = bitmap.getHeight();
-                    int[] pixels = new int[width * height];
-                    bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-
-                    RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
-                    BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-                    MultiFormatReader reader = new MultiFormatReader();
-
-                    Result result = reader.decode(binaryBitmap);
-                    String scannedText = result.getText();
-
-                    EditText etVpnLink = findViewById(R.id.etVpnLink);
-                    etVpnLink.setText(scannedText);
-                    saveVpnConfig(scannedText);
-                    Toast.makeText(this, "QR Code Processed from Gallery!", Toast.LENGTH_LONG).show();
-                } catch (Exception e) {
-                    Toast.makeText(this, "Failed to parse QR Code from this image!", Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                }
-            }
         }
     }
 }
