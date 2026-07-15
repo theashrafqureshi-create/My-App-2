@@ -23,6 +23,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+// 🎯 [CRITICAL FIX] सही R क्लास इम्पोर्ट
 import com.ashraf.whatsappvpn.R;
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.MultiFormatReader;
@@ -139,18 +140,13 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
-    @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK && requestCode == 103 && data != null) {
             Uri imageUri = data.getData();
             if (imageUri != null) {
                 try {
-                    InputStream imageStream = contentResolver.openInputStream(imageUri);
+                    InputStream imageStream = getContentResolver().openInputStream(imageUri);
                     Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
 
                     int width = bitmap.getWidth();
