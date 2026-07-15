@@ -16,7 +16,7 @@
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="WhatsApp VPN"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar"
         tools:targetApi="34">
@@ -39,10 +39,11 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [MANUAL BUILD FIX] पुराना ग्रैडल होने के कारण सर्विस टाइप हटा दिया है ताकि बिल्ड तुरंत पास हो जाए -->
+        <!-- 🎯 [FIXED] जावा कोड से मैच करने के लिए foregroundServiceType="vpn" को अनिवार्य रूप से जोड़ दिया है ताकि ऐप क्रैश न हो -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
+            android:foregroundServiceType="vpn"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
