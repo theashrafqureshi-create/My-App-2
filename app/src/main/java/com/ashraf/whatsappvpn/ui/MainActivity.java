@@ -46,7 +46,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🛠️ क्रैश पकड़ने वाला टोस्ट कोड वापस आ गया है!
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable throwable) {
@@ -81,8 +80,13 @@ public class MainActivity extends AppCompatActivity {
         btnCloseBanner.setOnClickListener(v -> greetingBanner.setVisibility(View.GONE));
 
         btnSettings.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(intent);
+            try {
+                Intent intent = new Intent();
+                intent.setClassName(MainActivity.this, "com.ashraf.whatsappvpn.ui.SettingsActivity");
+                startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            }
         });
 
         btnConnect.setOnClickListener(v -> {
