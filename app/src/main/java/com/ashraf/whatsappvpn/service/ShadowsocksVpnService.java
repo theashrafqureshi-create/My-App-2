@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
@@ -35,7 +34,6 @@ public class ShadowsocksVpnService extends VpnService {
 
         Log.d(TAG, "VPN Service Started Manually");
 
-        // 🎯 [FIXED] SharedPreferences की जगह सीधे MainActivity के लाइव Intent से लिंक रिसीव किया
         final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
 
         if (savedLink == null || savedLink.trim().isEmpty()) {
@@ -65,9 +63,9 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
         
-        // 🎯 [FIXED] अब यह मैनिफेस्ट के 'vpn' टाइप से 100% मैच करेगा और क्रैश नहीं होगा
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
+        // 🎯 [FIXED] ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN की जगह सीधे 16 का इस्तेमाल किया
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, 16);
         } else {
             startForeground(1, notification);
         }
