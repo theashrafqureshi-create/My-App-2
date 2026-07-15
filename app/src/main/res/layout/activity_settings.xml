@@ -48,7 +48,6 @@
         android:layout_height="wrap_content"
         android:hint="Paste ss:// link here..."
         android:inputType="textUri"
-        android:background="@android:drawable/editbox_background_normal"
         android:padding="12dp"
         android:layout_marginBottom="16dp" />
 
