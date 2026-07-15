@@ -7,7 +7,7 @@ android {
     compileSdk 34
     
     defaultConfig {
-        applicationId "com.ashraf.myapp"
+        applicationId 'com.ashraf.whatsappvpn'
         minSdk 26
         targetSdk 34
         versionCode 1
