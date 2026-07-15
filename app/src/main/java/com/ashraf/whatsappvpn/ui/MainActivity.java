@@ -19,10 +19,10 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-// 🎯 सही R क्लास इम्पोर्ट
 import com.ashraf.whatsappvpn.R;
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService;
 
@@ -47,38 +47,25 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // 🛠️ [CRITICAL FIX] पूरा एरर बिना कटे बड़े डायलॉग बॉक्स में देखने का सही कोड
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable throwable) {
-                Log.e("APP_CRASH", "Crash detected: ", throwable);
-                
-                final String convertThrowableToString = android.util.Log.getStackTraceString(throwable);
+        // 🛠️ [FORCED UI FIX] अब एरर को सीधे MainLooper के जरिए दिखाएंगे, ताकि वो हैंग न हो
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            Log.e("APP_CRASH", "Crash detected: ", throwable);
+            final String errorMsg = android.util.Log.getStackTraceString(throwable);
 
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Looper.prepare();
-                        
-                        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this);
-                        builder.setTitle("💥 APP CRASHED!");
-                        builder.setMessage(convertThrowableToString); 
-                        builder.setCancelable(false);
-                        builder.setPositiveButton("OK", new android.content.DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(android.content.DialogInterface dialog, int which) {
-                                android.os.Process.killProcess(android.os.Process.myPid());
-                                System.exit(10);
-                            }
-                        });
-                        
-                        builder.show();
-                        Looper.loop();
-                    }
-                }).start();
+            new Handler(Looper.getMainLooper()).post(() -> {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("💥 APP CRASHED!");
+                builder.setMessage(errorMsg);
+                builder.setCancelable(false);
+                builder.setPositiveButton("OK", (dialog, which) -> {
+                    android.os.Process.killProcess(android.os.Process.myPid());
+                    System.exit(10);
+                });
+                builder.show();
+            });
 
-                try { Thread.sleep(30000); } catch (InterruptedException e) {}
-            }
+            // ऐप को तुरंत बंद न होने दें ताकि यूजर पढ़ सके
+            try { Thread.sleep(60000); } catch (InterruptedException e) {}
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
