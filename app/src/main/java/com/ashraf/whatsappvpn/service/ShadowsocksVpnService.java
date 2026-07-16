@@ -94,6 +94,29 @@ public class ShadowsocksVpnService extends VpnService {
                         cleanLink = cleanLink.split("#")[0];
                     }
                     
+                    // "ss://" हटाकर केवल कोर डेटा स्ट्रिंग बाहर निकाल रहे हैं
+                    String rawData = cleanLink.substring(5);
+                    
+                    // 🎯 [SMART DECODER ENGINE ADDED] - अगर पूरा डेटा ही Base64 पैक्ड है
+                    if (!rawData.contains("@") && !rawData.contains(":")) {
+                        String decodedFull = "";
+                        try {
+                            decodedFull = new String(Base64.decode(rawData, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
+                        } catch (Exception e) {
+                            try {
+                                decodedFull = new String(Base64.decode(rawData, Base64.DEFAULT));
+                            } catch (Exception ex) {
+                                Log.e(TAG, "Full Base64 decoding failed");
+                            }
+                        }
+                        
+                        // डिकोड होने के बाद अगर नया नकली URI फ़ॉर्मेट बनता है तो उसे पार्स करेंगे
+                        if (!decodedFull.isEmpty() && decodedFull.contains("@")) {
+                            cleanLink = "ss://" + decodedFull;
+                        }
+                    }
+
+                    // अब सुधरे हुए या ओरिजिनल लिंक को स्टैंडर्ड URI की तरह पार्स कर रहे हैं
                     URI uri = URI.create(cleanLink);
                     String userInfo = uri.getUserInfo();
                     
@@ -105,7 +128,7 @@ public class ShadowsocksVpnService extends VpnService {
                                 try {
                                     userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
                                 } catch (Exception ex) {
-                                    Log.e(TAG, "Base64 decoding failed");
+                                    Log.e(TAG, "UserInfo Base64 decoding failed");
                                 }
                             }
                         }
@@ -181,7 +204,6 @@ public class ShadowsocksVpnService extends VpnService {
     private void setupVpnInterface() throws IOException {
         Builder builder = new Builder();
         
-        // 🎯 [व्हाट्सएप ओनली रूट सेटिंग्स] - केवल आवश्यक लोकल सबनेट रूट ही पास कर रहे हैं ताकि पूरे फोन का नेट ब्लॉक न हो
         builder.setSession("WhatsAppVPN")
                .addAddress("10.0.0.2", 24)
                .addRoute("0.0.0.0", 0);
@@ -229,7 +251,6 @@ public class ShadowsocksVpnService extends VpnService {
         }
         if (vpnInterface != null) {
             try {
-                // 🎯 [FIXED] चाबी का निशान तुरंत हटाने के लिए सिस्टम को पूरी तरह क्लोज सिग्नल दे रहे हैं
                 vpnInterface.close();
             } catch (IOException e) {
                 Log.e(TAG, "Error closing interface", e);
