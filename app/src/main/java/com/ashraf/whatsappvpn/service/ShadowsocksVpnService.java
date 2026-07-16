@@ -1,5 +1,6 @@
 package com.ashraf.whatsappvpn.service;
 
+import android.app.AlertDialog;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -13,6 +14,7 @@ import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.util.Base64;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.Toast;
 import java.io.IOException;
 import java.net.URI;
@@ -26,125 +28,151 @@ public class ShadowsocksVpnService extends VpnService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && "STOP_VPN".equals(intent.getAction())) {
-            stopVpn();
-            return START_NOT_STICKY;
-        }
-
-        createNotificationChannel();
-        Notification notification;
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notification = new Notification.Builder(this, CHANNEL_ID)
-                    .setContentTitle("WhatsApp VPN Connected")
-                    .setContentText("VPN tunnel is active...")
-                    .setSmallIcon(android.R.drawable.ic_menu_info_details)
-                    .setOngoing(true)
-                    .build();
-        } else {
-            notification = new Notification.Builder(this)
-                    .setContentTitle("WhatsApp VPN Connected")
-                    .setContentText("VPN tunnel is active...")
-                    .setSmallIcon(android.R.drawable.ic_menu_info_details)
-                    .getNotification();
-        }
-
-        startForeground(1, notification);
-
-        final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
-
-        if (savedLink == null || savedLink.trim().isEmpty()) {
-            new Handler(Looper.getMainLooper()).post(() -> 
-                Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
-            );
-            stopVpn();
-            return START_NOT_STICKY;
-        }
-
-        if (vpnThread != null || vpnInterface != null || localServer != null) {
-            stopVpnThreadsOnly();
-        }
-
+        // 🎯 [CRASH CATCHER] पूरे ऑनस्टार्ट कमांड को ट्राई-कैच में घेर दिया है ताकि क्रैश स्क्रीन पर दिखे
         try {
+            if (intent != null && "STOP_VPN".equals(intent.getAction())) {
+                stopVpn();
+                return START_NOT_STICKY;
+            }
+
+            createNotificationChannel();
+            Notification notification;
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                notification = new Notification.Builder(this, CHANNEL_ID)
+                        .setContentTitle("WhatsApp VPN Connected")
+                        .setContentText("VPN tunnel is active...")
+                        .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                        .setOngoing(true)
+                        .build();
+            } else {
+                notification = new Notification.Builder(this)
+                        .setContentTitle("WhatsApp VPN Connected")
+                        .setContentText("VPN tunnel is active...")
+                        .setSmallIcon(android.R.drawable.ic_menu_info_details)
+                        .getNotification();
+            }
+
+            startForeground(1, notification);
+
+            final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
+
+            if (savedLink == null || savedLink.trim().isEmpty()) {
+                new Handler(Looper.getMainLooper()).post(() -> 
+                    Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
+                );
+                stopVpn();
+                return START_NOT_STICKY;
+            }
+
+            if (vpnThread != null || vpnInterface != null || localServer != null) {
+                stopVpnThreadsOnly();
+            }
+
             setupVpnInterface();
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to establish VPN Interface immediately: " + e.getMessage());
-            stopVpn();
-            return START_NOT_STICKY;
-        }
 
-        final String finalServerIp;
-        final int finalServerPort;
-        final String finalPassword;
-        final String finalMethod;
+            final String finalServerIp;
+            final int finalServerPort;
+            final String finalPassword;
+            final String finalMethod;
 
-        String tempServerIp = "127.0.0.1";
-        int tempServerPort = 8388;
-        String tempPassword = "your_password";
-        String tempMethod = "AES";
+            String tempServerIp = "127.0.0.1";
+            int tempServerPort = 8388;
+            String tempPassword = "your_password";
+            String tempMethod = "AES";
 
-        try {
-            if (savedLink.startsWith("ss://")) {
-                String cleanLink = savedLink;
-                if (cleanLink.contains("#")) {
-                    cleanLink = cleanLink.split("#")[0];
-                }
-                
-                URI uri = URI.create(cleanLink);
-                String userInfo = uri.getUserInfo();
-                
-                if (userInfo != null) {
-                    if (!userInfo.contains(":")) {
-                        try {
-                            userInfo = new String(Base64.decode(userInfo, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
-                        } catch (Exception e) {
+            try {
+                if (savedLink.startsWith("ss://")) {
+                    String cleanLink = savedLink;
+                    if (cleanLink.contains("#")) {
+                        cleanLink = cleanLink.split("#")[0];
+                    }
+                    
+                    URI uri = URI.create(cleanLink);
+                    String userInfo = uri.getUserInfo();
+                    
+                    if (userInfo != null) {
+                        if (!userInfo.contains(":")) {
                             try {
-                                userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
-                            } catch (Exception ex) {
-                                Log.e(TAG, "Base64 decoding failed");
+                                userInfo = new String(Base64.decode(userInfo, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
+                            } catch (Exception e) {
+                                try {
+                                    userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
+                                } catch (Exception ex) {
+                                    Log.e(TAG, "Base64 decoding failed");
+                                }
                             }
+                        }
+                        
+                        if (userInfo.contains(":")) {
+                            String[] parts = userInfo.split(":", 2);
+                            tempMethod = parts[0];
+                            tempPassword = parts[1];
                         }
                     }
                     
-                    if (userInfo.contains(":")) {
-                        String[] parts = userInfo.split(":", 2);
-                        tempMethod = parts[0];
-                        tempPassword = parts[1];
+                    tempServerIp = uri.getHost();
+                    tempServerPort = uri.getPort();
+                    if (tempServerPort == -1) {
+                        tempServerPort = 8388;
                     }
                 }
-                
-                tempServerIp = uri.getHost();
-                tempServerPort = uri.getPort();
-                if (tempServerPort == -1) {
-                    tempServerPort = 8388;
-                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
+
+            finalServerIp = tempServerIp;
+            finalServerPort = tempServerPort;
+            finalPassword = tempPassword;
+            finalMethod = tempMethod;
+
+            localServer = new ShadowsocksLocalServer();
+
+            vpnThread = new Thread(() -> {
+                try {
+                    localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
+                    
+                    while (!Thread.currentThread().isInterrupted() && vpnInterface != null) {
+                        Thread.sleep(1000);
+                    }
+                } catch (Exception e) {
+                    showDynamicError("Thread Error: " + e.getMessage());
+                    stopVpn();
+                }
+            }, "ShadowsocksVpnThread");
+
+            vpnThread.start();
+
+        } catch (Throwable t) {
+            // 🎯 अगर कोई भी अनजाना सिस्टम एरर आया, तो यह ब्लॉक उसे पकड़ कर स्क्रीन पर दिखा देगा
+            showDynamicError("Service Crash: " + t.getClass().getSimpleName() + " -> " + t.getMessage());
+            stopVpn();
+            return START_NOT_STICKY;
         }
 
-        finalServerIp = tempServerIp;
-        finalServerPort = tempServerPort;
-        finalPassword = tempPassword;
-        finalMethod = tempMethod;
-
-        localServer = new ShadowsocksLocalServer();
-
-        vpnThread = new Thread(() -> {
-            try {
-                localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
-                
-                while (!Thread.currentThread().isInterrupted() && vpnInterface != null) {
-                    Thread.sleep(1000);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error running VPN thread: " + e.getMessage());
-                stopVpn();
-            }
-        }, "ShadowsocksVpnThread");
-
-        vpnThread.start();
         return START_STICKY;
+    }
+
+    // 🎯 स्क्रीन पर एरर का नाम चमकाने के लिए एक स्पेशल मेथड
+    private void showDynamicError(final String errorMessage) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
+                
+                // एक डायलॉग भी दिखा देते हैं ताकि एरर गायब न हो और आप आराम से पढ़ सकें
+                AlertDialog dialog = new AlertDialog.Builder(getApplicationContext())
+                        .setTitle("VPN System Alert")
+                        .setMessage(errorMessage)
+                        .setPositiveButton("OK", null)
+                        .create();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
+                } else {
+                    dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
+                }
+                dialog.show();
+            } catch (Exception ignored) {}
+        });
     }
 
     private void setupVpnInterface() throws IOException {
