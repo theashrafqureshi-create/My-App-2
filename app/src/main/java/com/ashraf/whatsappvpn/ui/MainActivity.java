@@ -27,6 +27,11 @@ import androidx.core.content.ContextCompat;
 import com.ashraf.whatsappvpn.R;
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 public class MainActivity extends AppCompatActivity {
 
     private boolean isConnected = false;
@@ -46,6 +51,27 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                try {
+                    StringWriter sw = new StringWriter();
+                    PrintWriter pw = new PrintWriter(sw);
+                    throwable.printStackTrace(pw);
+                    String stackTrace = sw.toString();
+
+                    File file = new File(getExternalFilesDir(null), "crash_log.txt");
+                    FileOutputStream fos = new FileOutputStream(file);
+                    fos.write(stackTrace.getBytes());
+                    fos.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                System.exit(1);
+            }
+        });
+
         setContentView(R.layout.activity_main);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -112,7 +138,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnConnect = findViewById(R.id.btnConnect);
         if (btnConnect != null) {
             btnConnect.setText("DISCONNECT");
-            btnConnect.setBackgroundColor(Color.parseColor("#D32F2F")); // कनेक्ट होने पर बटन लाल हो जाएगा
+            btnConnect.setBackgroundColor(Color.parseColor("#D32F2F"));
         }
         Toast.makeText(this, "VPN Connected Successfully!", Toast.LENGTH_SHORT).show();
         isConnected = true;
@@ -123,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
         Button btnConnect = findViewById(R.id.btnConnect);
         if (btnConnect != null) {
             btnConnect.setText("CONNECT");
-            btnConnect.setBackgroundColor(Color.parseColor("#075E54")); // डिस्कनेक्ट होने पर वापस पुराना ग्रीन कलर
+            btnConnect.setBackgroundColor(Color.parseColor("#075E54"));
         }
         Toast.makeText(this, "VPN Disconnected", Toast.LENGTH_SHORT).show();
         isConnected = false;
