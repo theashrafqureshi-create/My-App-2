@@ -43,11 +43,8 @@ dependencies {
 
     // QR Code Scanning
     implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
-    implementation 'com.google.zxing:core:3.4.1'
+    implementation 'com.google.xing:core:3.4.1'
 
     // Shadowsocks VPN Local libs
     implementation fileTree(dir: 'libs', include: ['*.aar'])
-    
-    // Shadowsocks Core Engine Engine v4.10.1
-    implementation 'com.github.shadowsocks:shadowsocks-android:v4.10.1'
 }
