@@ -13,12 +13,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.util.Base64;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 import java.io.IOException;
-import java.net.URI;
+import java.net.Socket;
 
 public class ShadowsocksVpnService extends VpnService {
     private static final String TAG = "ShadowsocksVpn";
@@ -26,6 +25,11 @@ public class ShadowsocksVpnService extends VpnService {
     private Thread vpnThread;
     private ParcelFileDescriptor vpnInterface;
     private ShadowsocksLocalServer localServer;
+
+    // 🛠️ नया मेथड: ShadowsocksLocalServer इस मेथड को कॉल करके अपने सॉकेट्स को लूप से बचाएगा
+    public boolean protectSocket(Socket socket) {
+        return protect(socket);
+    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -61,11 +65,17 @@ public class ShadowsocksVpnService extends VpnService {
                 startForeground(1, notification);
             }
 
-            final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
+            // 🛠️ बदलाव: अब हम क्रेडेंशियल्स को सीधे Intent से अलग-अलग वैल्यू के रूप में ले रहे हैं
+            final String finalServerIp = intent != null ? intent.getStringExtra("SERVER_IP") : null;
+            final int finalServerPort = intent != null ? intent.getIntExtra("SERVER_PORT", 8388) : 8388;
+            final String finalPassword = intent != null ? intent.getStringExtra("PASSWORD") : null;
+            final String finalMethod = intent != null ? intent.getStringExtra("ENCRYPTION_METHOD") : "aes-256-gcm";
+            final String clientName = intent != null ? intent.getStringExtra("CLIENT_NAME") : "";
 
-            if (savedLink == null || savedLink.trim().isEmpty()) {
+            // वैलिडेशन चेक: अगर मुख्य डेटा गायब है, तो सर्विस बंद हो जाएगी
+            if (finalServerIp == null || finalServerIp.trim().isEmpty() || finalPassword == null || finalPassword.trim().isEmpty()) {
                 new Handler(Looper.getMainLooper()).post(() -> 
-                    Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
+                    Toast.makeText(ShadowsocksVpnService.this, "Invalid VPN Configurations!", Toast.LENGTH_LONG).show()
                 );
                 stopVpn();
                 return START_NOT_STICKY;
@@ -77,115 +87,12 @@ public class ShadowsocksVpnService extends VpnService {
 
             setupVpnInterface();
 
-            final String finalServerIp;
-            final int finalServerPort;
-            final String finalPassword;
-            final String finalMethod;
-
-            String tempServerIp = "127.0.0.1";
-            int tempServerPort = 8388;
-            String tempPassword = "your_password";
-            String tempMethod = "AES";
-
-            try {
-                if (savedLink.startsWith("ss://")) {
-                    String cleanLink = savedLink;
-                    if (cleanLink.contains("#")) {
-                        cleanLink = cleanLink.split("#")[0];
-                    }
-                    
-                    String rawData = cleanLink.substring(5);
-                    
-                    // 🎯 [SMART DECODER] - अगर पूरा डेटा ही Base64 पैक्ड है (बिना @ और : के)
-                    if (!rawData.contains("@") && !rawData.contains(":")) {
-                        String decodedFull = "";
-                        try {
-                            decodedFull = new String(Base64.decode(rawData, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
-                        } catch (Exception e) {
-                            try {
-                                decodedFull = new String(Base64.decode(rawData, Base64.DEFAULT));
-                            } catch (Exception ex) {
-                                Log.e(TAG, "Full Base64 decoding failed");
-                            }
-                        }
-                        
-                        // अगर डिकोड होने के बाद इसमें @ मिला, तो इसे मैन्युअली स्प्लिट करके डेटा निकाल लेंगे
-                        if (!decodedFull.isEmpty() && decodedFull.contains("@") && decodedFull.contains(":")) {
-                            String[] atParts = decodedFull.split("@", 2);
-                            String creds = atParts[0];
-                            String endpoint = atParts[1];
-
-                            if (creds.contains(":")) {
-                                String[] credParts = creds.split(":", 2);
-                                tempMethod = credParts[0];
-                                tempPassword = credParts[1];
-                            }
-
-                            if (endpoint.contains(":")) {
-                                int colonIndex = endpoint.lastIndexOf(":");
-                                tempServerIp = endpoint.substring(0, colonIndex);
-                                try {
-                                    tempServerPort = Integer.parseInt(endpoint.substring(colonIndex + 1));
-                                } catch (NumberFormatException e) {
-                                    tempServerPort = 8388;
-                                }
-                            } else {
-                                tempServerIp = endpoint;
-                            }
-                            
-                            // इस केस के लिए cleanLink को ऐसा सेट कर देते हैं जिससे नीचे का पुराना पार्सर एरर न दे
-                            cleanLink = "ss://your_password@" + tempServerIp + ":" + tempServerPort;
-                        }
-                    }
-
-                    // 🎯 आपका पुराना ओरिजिनल URI पार्सर ब्लॉक (100% वैसा ही है)
-                    URI uri = URI.create(cleanLink);
-                    String userInfo = uri.getUserInfo();
-                    
-                    if (userInfo != null) {
-                        if (!userInfo.contains(":")) {
-                            try {
-                                userInfo = new String(Base64.decode(userInfo, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP));
-                            } catch (Exception e) {
-                                try {
-                                    userInfo = new String(Base64.decode(userInfo, Base64.DEFAULT));
-                                } catch (Exception ex) {
-                                    Log.e(TAG, "UserInfo Base64 decoding failed");
-                                }
-                            }
-                        }
-                        
-                        if (userInfo.contains(":")) {
-                            String[] parts = userInfo.split(":", 2);
-                            // अगर ऊपर स्मार्ट डिकोडर से वैल्यू मिल चुकी है, तो उसे ओवरराइट नहीं करेंगे
-                            if (tempPassword.equals("your_password")) {
-                                tempMethod = parts[0];
-                                tempPassword = parts[1];
-                            }
-                        }
-                    }
-                    
-                    // अगर ऊपर स्मार्ट डिकोडर से IP मिल चुका है, तो उसे ही रखेंगे, वरना पुराना तरीका लेंगे
-                    if (tempServerIp.equals("127.0.0.1") && uri.getHost() != null) {
-                        tempServerIp = uri.getHost();
-                    }
-                    if (tempServerPort == 8388 && uri.getPort() != -1) {
-                        tempServerPort = uri.getPort();
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
-            }
-
-            finalServerIp = tempServerIp;
-            finalServerPort = tempServerPort;
-            finalPassword = tempPassword;
-            finalMethod = tempMethod;
-
-            localServer = new ShadowsocksLocalServer();
+            // 🛠️ बदलाव: अब हम लोकल सर्वर के कंस्ट्रक्टर में 'this' (इस सर्विस का रेफरेंस) पास कर रहे हैं
+            localServer = new ShadowsocksLocalServer(this);
 
             vpnThread = new Thread(() -> {
                 try {
+                    Log.i(TAG, "Starting engine for user: " + clientName);
                     localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
                     
                     while (!Thread.currentThread().isInterrupted() && vpnInterface != null) {
