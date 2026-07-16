@@ -71,17 +71,25 @@ public class MainActivity extends AppCompatActivity {
 
         btnConnect.setOnClickListener(v -> {
             if (!isConnected) {
-                // 🛠️ बदलाव: अब हम क्रेडेंशियल्स चेक करने के लिए "VpnSettings" फ़ाइल का उपयोग करेंगे
                 SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
                 String serverIp = sharedPref.getString("SERVER_IP", "");
                 String password = sharedPref.getString("PASSWORD", "");
 
-                // अगर कोर डेटा मौजूद नहीं है, तो आगे नहीं बढ़ेगा
+                // 🛠️ नया बदलाव: अगर डेटा खाली है (फर्स्ट टाइम यूजर), तो एरर दिखाने के बजाय सीधे सेटिंग्स पेज पर भेजें
                 if (serverIp.trim().isEmpty() || password.trim().isEmpty()) {
-                    Toast.makeText(MainActivity.this, "Please set your server configuration in Settings first!", Toast.LENGTH_LONG).show();
-                    return;
+                    Toast.makeText(MainActivity.this, "Please set your server configuration first!", Toast.LENGTH_LONG).show();
+                    
+                    try {
+                        Intent intent = new Intent();
+                        intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
+                        startActivity(intent);
+                    } catch (Exception e) {
+                        Toast.makeText(MainActivity.this, "Error opening Settings: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                    return; // यहीं से कोड रुक जाएगा, वीपीएन स्टार्ट नहीं होगा
                 }
 
+                // अगर डेटा पहले से मौजूद है (सेकंड टाइम), तो सीधे वीपीएन कनेक्शन प्रोसेस शुरू होगा
                 Intent intent = VpnService.prepare(MainActivity.this);
                 if (intent != null) {
                     vpnPermissionLauncher.launch(intent);
@@ -113,7 +121,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startVpnService() {
-        // 🛠️ बदलाव: 5 बॉक्स का सारा मैन्युअल डेटा उठाकर सीधे Intent के ज़रिए सर्विस को पास करना
         SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
         String serverIp = sharedPref.getString("SERVER_IP", "");
         int serverPort = sharedPref.getInt("SERVER_PORT", 8388);
@@ -123,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, ShadowsocksVpnService.class);
         
-        // पुरानी 'SERVER_LINK' की जगह ये 5 वैल्यूज साफ़-साफ़ जा रही हैं
         intent.putExtra("SERVER_IP", serverIp);
         intent.putExtra("SERVER_PORT", serverPort);
         intent.putExtra("PASSWORD", password);
