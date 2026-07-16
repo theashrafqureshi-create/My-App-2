@@ -17,6 +17,8 @@ import android.util.Log;
 import android.view.WindowManager;
 import android.widget.Toast;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.Socket;
 
 public class ShadowsocksVpnService extends VpnService {
@@ -26,13 +28,19 @@ public class ShadowsocksVpnService extends VpnService {
     private ParcelFileDescriptor vpnInterface;
     private ShadowsocksLocalServer localServer;
 
-    // 🛠️ नया मेथड: ShadowsocksLocalServer इस मेथड को कॉल करके अपने सॉकेट्स को लूप से बचाएगा
     public boolean protectSocket(Socket socket) {
         return protect(socket);
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                handleServiceCrash(throwable);
+            }
+        });
+
         try {
             if (intent != null && "STOP_VPN".equals(intent.getAction())) {
                 stopVpn();
@@ -65,14 +73,12 @@ public class ShadowsocksVpnService extends VpnService {
                 startForeground(1, notification);
             }
 
-            // 🛠️ बदलाव: अब हम क्रेडेंशियल्स को सीधे Intent से अलग-अलग वैल्यू के रूप में ले रहे हैं
             final String finalServerIp = intent != null ? intent.getStringExtra("SERVER_IP") : null;
             final int finalServerPort = intent != null ? intent.getIntExtra("SERVER_PORT", 8388) : 8388;
             final String finalPassword = intent != null ? intent.getStringExtra("PASSWORD") : null;
             final String finalMethod = intent != null ? intent.getStringExtra("ENCRYPTION_METHOD") : "aes-256-gcm";
             final String clientName = intent != null ? intent.getStringExtra("CLIENT_NAME") : "";
 
-            // वैलिडेशन चेक: अगर मुख्य डेटा गायब है, तो सर्विस बंद हो जाएगी
             if (finalServerIp == null || finalServerIp.trim().isEmpty() || finalPassword == null || finalPassword.trim().isEmpty()) {
                 new Handler(Looper.getMainLooper()).post(() -> 
                     Toast.makeText(ShadowsocksVpnService.this, "Invalid VPN Configurations!", Toast.LENGTH_LONG).show()
@@ -87,7 +93,6 @@ public class ShadowsocksVpnService extends VpnService {
 
             setupVpnInterface();
 
-            // 🛠️ बदलाव: अब हम लोकल सर्वर के कंस्ट्रक्टर में 'this' (इस सर्विस का रेफरेंस) पास कर रहे हैं
             localServer = new ShadowsocksLocalServer(this);
 
             vpnThread = new Thread(() -> {
@@ -98,41 +103,40 @@ public class ShadowsocksVpnService extends VpnService {
                     while (!Thread.currentThread().isInterrupted() && vpnInterface != null) {
                         Thread.sleep(1000);
                     }
-                } catch (Exception e) {
-                    showDynamicError("Thread Error: " + e.getMessage());
-                    stopVpn();
+                } catch (Throwable t) {
+                    handleServiceCrash(t);
                 }
             }, "ShadowsocksVpnThread");
 
+            vpnThread.setUncaughtExceptionHandler((thread, throwable) -> handleServiceCrash(throwable));
             vpnThread.start();
 
         } catch (Throwable t) {
-            showDynamicError("Service Crash: " + t.getClass().getSimpleName() + " -> " + t.getMessage());
-            stopVpn();
+            handleServiceCrash(t);
             return START_NOT_STICKY;
         }
 
         return START_STICKY;
     }
 
-    private void showDynamicError(final String errorMessage) {
+    private void handleServiceCrash(Throwable throwable) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        throwable.printStackTrace(pw);
+        String stackTrace = sw.toString();
+
+        String shortError = "Crash in Service: " + throwable.toString();
+        StackTraceElement[] elements = throwable.getStackTrace();
+        if (elements != null && elements.length > 0) {
+            shortError = "Error at " + elements[0].getFileName() + ":" + elements[0].getLineNumber() + " -> " + throwable.getMessage();
+        }
+
+        final String finalError = shortError;
         new Handler(Looper.getMainLooper()).post(() -> {
-            try {
-                Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
-                
-                AlertDialog dialog = new AlertDialog.Builder(getApplicationContext())
-                        .setTitle("VPN System Alert")
-                        .setMessage(errorMessage)
-                        .setPositiveButton("OK", null)
-                        .create();
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
-                } else {
-                    dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT);
-                }
-                dialog.show();
-            } catch (Exception ignored) {}
+            Toast.makeText(getApplicationContext(), finalError, Toast.LENGTH_LONG).show();
+            Log.e(TAG, "CRITICAL SERVICE CRASH: " + finalError, throwable);
         });
+        stopVpn();
     }
 
     private void setupVpnInterface() throws IOException {
@@ -160,6 +164,10 @@ public class ShadowsocksVpnService extends VpnService {
             Log.e(TAG, "WhatsApp Business not installed");
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            builder.setMetered(false);
+        }
+
         vpnInterface = builder.establish();
         Log.i(TAG, "VPN Interface Established Instantly!");
     }
@@ -180,7 +188,11 @@ public class ShadowsocksVpnService extends VpnService {
 
     private void stopVpnThreadsOnly() {
         if (localServer != null) {
-            localServer.stopServer();
+            try {
+                localServer.stopServer();
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping local server", e);
+            }
             localServer = null;
         }
         if (vpnInterface != null) {
