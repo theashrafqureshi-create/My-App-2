@@ -6,7 +6,6 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
@@ -50,11 +49,7 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
 
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
-        } else {
-            startForeground(1, notification);
-        }
+        startForeground(1, notification);
 
         final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
 
