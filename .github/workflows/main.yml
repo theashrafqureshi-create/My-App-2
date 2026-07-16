@@ -1,4 +1,4 @@
-Name: Build WhatsApp VPN Debug APK
+name: Build WhatsApp VPN Debug APK
 on:
   push:
     branches: [ "main" ]
