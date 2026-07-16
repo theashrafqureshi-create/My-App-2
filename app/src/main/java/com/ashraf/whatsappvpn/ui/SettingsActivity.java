@@ -23,7 +23,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         TextView btnBack = findViewById(R.id.btnBack);
         
-        // 🛠️ बदलाव: 5 मैनुअल इनपुट बॉक्स और ड्रॉपडाउन (Spinner) के लिए विजेट्स
+        // 🛠️ 5 मैनुअल इनपुट बॉक्स और ड्रॉपडाउन (Spinner) के लिए विजेट्स
         EditText etClientName = findViewById(R.id.etClientName);
         EditText etServerIp = findViewById(R.id.etServerIp);
         EditText etServerPort = findViewById(R.id.etServerPort);
@@ -32,7 +32,7 @@ public class SettingsActivity extends AppCompatActivity {
         
         Button btnSaveLink = findViewById(R.id.btnSaveLink); // यह आपका सेव बटन ही रहेगा
 
-        // 🛠️ बदलाव: मेमोरी से पुराना सेव किया हुआ डेटा लोड करना (अगर पहले से सेव है)
+        // 🛠️ मेमोरी से पुराना सेव किया हुआ डेटा लोड करना (अगर पहले से सेव है)
         SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
         
         etClientName.setText(sharedPref.getString("CLIENT_NAME", ""));
@@ -43,23 +43,33 @@ public class SettingsActivity extends AppCompatActivity {
         
         etPassword.setText(sharedPref.getString("PASSWORD", ""));
 
-        // ड्रॉपडाउन (Spinner) में एन्क्रिप्शन मेथड सेट करना (जैसे aes-256-gcm)
+        // 🛠️ फिक्स: ड्रॉपडाउन (Spinner) में एन्क्रिप्शन मेथड सेट करने का सुरक्षित तरीका
         String savedMethod = sharedPref.getString("ENCRYPTION_METHOD", "aes-256-gcm");
-        if (spEncryptionMethod.getAdapter() != null) {
-            ArrayAdapter<CharSequence> adapter = (ArrayAdapter<CharSequence>) spEncryptionMethod.getAdapter();
-            int spinnerPosition = adapter.getPosition(savedMethod);
-            spEncryptionMethod.setSelection(spinnerPosition);
+        if (spEncryptionMethod != null && spEncryptionMethod.getAdapter() != null) {
+            try {
+                ArrayAdapter<CharSequence> adapter = (ArrayAdapter<CharSequence>) spEncryptionMethod.getAdapter();
+                int spinnerPosition = adapter.getPosition(savedMethod);
+                if (spinnerPosition >= 0) {
+                    spEncryptionMethod.setSelection(spinnerPosition);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         btnBack.setOnClickListener(v -> finish());
 
-        // 🛠️ बदलाव: सेव बटन दबाने पर सभी 5 वैल्यूज को SharedPreferences में स्टोर करना
+        // 🛠️ सेव बटन दबाने पर सभी 5 वैल्यूज को SharedPreferences में स्टोर करना
         btnSaveLink.setOnClickListener(v -> {
             String clientName = etClientName.getText().toString().trim();
             String serverIp = etServerIp.getText().toString().trim();
             String portStr = etServerPort.getText().toString().trim();
             String password = etPassword.getText().toString().trim();
-            String method = spEncryptionMethod.getSelectedItem().toString();
+            
+            String method = "aes-256-gcm";
+            if (spEncryptionMethod != null && spEncryptionMethod.getSelectedItem() != null) {
+                method = spEncryptionMethod.getSelectedItem().toString();
+            }
 
             // वैलिडेशन: चेक करें कि कोई मुख्य बॉक्स खाली तो नहीं है
             if (serverIp.isEmpty() || portStr.isEmpty() || password.isEmpty()) {
