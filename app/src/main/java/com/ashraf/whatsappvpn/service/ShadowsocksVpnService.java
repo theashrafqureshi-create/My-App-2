@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
@@ -28,7 +29,6 @@ public class ShadowsocksVpnService extends VpnService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 🎯 [CRASH CATCHER] पूरे ऑनस्टार्ट कमांड को ट्राई-कैच में घेर दिया है ताकि क्रैश स्क्रीन पर दिखे
         try {
             if (intent != null && "STOP_VPN".equals(intent.getAction())) {
                 stopVpn();
@@ -53,7 +53,14 @@ public class ShadowsocksVpnService extends VpnService {
                         .getNotification();
             }
 
-            startForeground(1, notification);
+            // 🎯 [FIXED] एंड्रॉइड 14+ के नियमों के मुताबिक यहाँ सही फोरग्राउंड टाइप पास कर दिया है
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE);
+            } else {
+                startForeground(1, notification);
+            }
 
             final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
 
@@ -144,7 +151,6 @@ public class ShadowsocksVpnService extends VpnService {
             vpnThread.start();
 
         } catch (Throwable t) {
-            // 🎯 अगर कोई भी अनजाना सिस्टम एरर आया, तो यह ब्लॉक उसे पकड़ कर स्क्रीन पर दिखा देगा
             showDynamicError("Service Crash: " + t.getClass().getSimpleName() + " -> " + t.getMessage());
             stopVpn();
             return START_NOT_STICKY;
@@ -153,13 +159,11 @@ public class ShadowsocksVpnService extends VpnService {
         return START_STICKY;
     }
 
-    // 🎯 स्क्रीन पर एरर का नाम चमकाने के लिए एक स्पेशल मेथड
     private void showDynamicError(final String errorMessage) {
         new Handler(Looper.getMainLooper()).post(() -> {
             try {
                 Toast.makeText(getApplicationContext(), errorMessage, Toast.LENGTH_LONG).show();
                 
-                // एक डायलॉग भी दिखा देते हैं ताकि एरर गायब न हो और आप आराम से पढ़ सकें
                 AlertDialog dialog = new AlertDialog.Builder(getApplicationContext())
                         .setTitle("VPN System Alert")
                         .setMessage(errorMessage)
