@@ -5,7 +5,7 @@ plugins {
 android {
     namespace 'com.ashraf.whatsappvpn'
     compileSdk 34
-    
+
     defaultConfig {
         applicationId 'com.ashraf.whatsappvpn'
         minSdk 26
@@ -33,12 +33,11 @@ android {
 }
 
 dependencies {
-    // 🎯 [FIXED] एंड्रॉइड 14+ के फोरग्राउंड सर्विस वीपीएन टाइप्स को कंपाइलर को दिखाने के लिए यह कोर लाइब्रेरी जरूरी है
+    // [FIXED] एंड्रॉइड 14+ के फोरग्राउंड सर्विस वीपीएन टाइप को बैकग्राउंड में दिखाने के लिए यह और लाइब्रेरी जरूरी है
     implementation 'androidx.work:work-runtime:2.9.0'
 
     implementation 'androidx.core:core-ktx:1.12.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.github.shadowsocks:shadowsocks-android:v4.10.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
@@ -48,4 +47,7 @@ dependencies {
 
     // Shadowsocks VPN Local libs
     implementation fileTree(dir: 'libs', include: ['*.aar'])
+    
+    // Shadowsocks Core Engine Engine v4.10.1
+    implementation 'com.github.shadowsocks:shadowsocks-android:v4.10.1'
 }
