@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
@@ -49,7 +50,12 @@ public class ShadowsocksVpnService extends VpnService {
                     .getNotification();
         }
 
-        startForeground(1, notification);
+        // 🎯 [FIXED] एंड्रॉइड Q (API 29) और उससे ऊपर के लिए प्रॉपर VPN टाइप डिक्लेरेशन यहाँ जुड़ गया है
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
+        } else {
+            startForeground(1, notification);
+        }
 
         final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
 
