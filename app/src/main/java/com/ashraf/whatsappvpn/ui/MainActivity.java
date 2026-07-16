@@ -21,14 +21,13 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.ashraf.whatsappvpn.R;
 import com.ashraf.whatsappvpn.service.ShadowsocksVpnService;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -55,20 +54,19 @@ public class MainActivity extends AppCompatActivity {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread thread, Throwable throwable) {
-                try {
-                    StringWriter sw = new StringWriter();
-                    PrintWriter pw = new PrintWriter(sw);
-                    throwable.printStackTrace(pw);
-                    String stackTrace = sw.toString();
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                throwable.printStackTrace(pw);
+                String stackTrace = sw.toString();
 
-                    File file = new File(getExternalFilesDir(null), "crash_log.txt");
-                    FileOutputStream fos = new FileOutputStream(file);
-                    fos.write(stackTrace.getBytes());
-                    fos.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                System.exit(1);
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("App Crashed! Error Details:")
+                            .setMessage(stackTrace)
+                            .setPositiveButton("OK", (dialog, which) -> System.exit(1))
+                            .setCancelable(false)
+                            .show();
+                });
             }
         });
 
