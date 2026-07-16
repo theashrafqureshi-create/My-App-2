@@ -15,11 +15,8 @@ public class ShadowsocksLocalServer {
     private boolean isRunning = false;
     private int assignedPort = 0;
     private final List<Socket> activeSockets = new ArrayList<>();
-    
-    // 🛠️ बदलाव: वीपीएन सर्विस का रेफरेंस स्टोर करने के लिए वेरिएबल
     private final ShadowsocksVpnService vpnService;
 
-    // 🛠️ बदलाव: कंस्ट्रक्टर जो वीपीएन सर्विस का रेफरेंस लेगा
     public ShadowsocksLocalServer(ShadowsocksVpnService vpnService) {
         this.vpnService = vpnService;
     }
@@ -44,7 +41,7 @@ public class ShadowsocksLocalServer {
                         synchronized (activeSockets) {
                             activeSockets.add(localSocket);
                         }
-                        new Thread(() -> handleConnection(localSocket, remoteServerIp, remoteServerPort)).start();
+                        handleConnection(localSocket, remoteServerIp, remoteServerPort);
                     } catch (IOException e) {
                         if (!isRunning) break;
                         Log.e(TAG, "Accept error: " + e.getMessage());
@@ -56,38 +53,33 @@ public class ShadowsocksLocalServer {
         }, "SSLocalServerMainThread").start();
     }
 
-    // 🛠️ नया मेथड: वीपीएन टनल के पैकेट लूप से सीधा डेटा रीड/राइट करने के लिए (Service द्वारा उपयोग के लिए)
     public void forwardPacketToRemote(byte[] data, int length, OutputStream vpnInterfaceOut) {
-        // यहाँ आपका Shadowsocks का एन्क्रिप्शन/डिक्रिप्शन लॉजिक काम करेगा
-        // अभी के लिए यह सिर्फ पैकेट्स को बिना ब्लॉक किए मैनेज रखने का बेस तैयार करता है
     }
 
     private void handleConnection(Socket localSocket, String remoteIp, int remotePort) {
         new Thread(() -> {
             Socket remoteSocket = null;
             try {
-                // 🛠️ बदलाव: नया रिमोट सॉकेट ऑब्जेक्ट बनाना
                 remoteSocket = new Socket();
                 
-                // 🔥 सबसे महत्वपूर्ण बदलाव: सॉकेट को कनेक्ट करने से पहले वीपीएन लूप से सुरक्षित (Protect) करना
                 if (vpnService != null) {
                     boolean protectedSuccess = vpnService.protectSocket(remoteSocket);
                     Log.d(TAG, "Remote socket protection status: " + protectedSuccess);
                 }
 
-                // सॉकेट प्रोटेक्ट होने के बाद अब इसे रिमोट सर्वर से कनेक्ट करें
                 remoteSocket.connect(new java.net.InetSocketAddress(remoteIp, remotePort), 10000);
 
                 synchronized (activeSockets) {
                     activeSockets.add(remoteSocket);
                 }
 
-                final Socket finalRemoteSocket = remoteSocket;
                 InputStream localIn = localSocket.getInputStream();
                 OutputStream localOut = localSocket.getOutputStream();
                 InputStream remoteIn = remoteSocket.getInputStream();
                 OutputStream remoteOut = remoteSocket.getOutputStream();
 
+                Socket finalRemoteSocket = remoteSocket;
+                
                 Thread t1 = new Thread(() -> {
                     byte[] buffer = new byte[16384];
                     int bytesRead;
@@ -119,8 +111,7 @@ public class ShadowsocksLocalServer {
 
             } catch (Exception e) {
                 Log.e(TAG, "Data transfer error: " + e.getMessage());
-            } 
-            finally {
+            } finally {
                 closeSocket(localSocket);
                 closeSocket(remoteSocket);
             }
