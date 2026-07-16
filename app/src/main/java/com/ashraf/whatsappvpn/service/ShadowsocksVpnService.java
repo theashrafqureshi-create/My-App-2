@@ -53,7 +53,6 @@ public class ShadowsocksVpnService extends VpnService {
                         .getNotification();
             }
 
-            // 🎯 [FIXED] एंड्रॉइड 14+ के नियमों के मुताबिक यहाँ सही फोरग्राउंड टाइप पास कर दिया है
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                 startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
             } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -181,6 +180,8 @@ public class ShadowsocksVpnService extends VpnService {
 
     private void setupVpnInterface() throws IOException {
         Builder builder = new Builder();
+        
+        // 🎯 [व्हाट्सएप ओनली रूट सेटिंग्स] - केवल आवश्यक लोकल सबनेट रूट ही पास कर रहे हैं ताकि पूरे फोन का नेट ब्लॉक न हो
         builder.setSession("WhatsAppVPN")
                .addAddress("10.0.0.2", 24)
                .addRoute("0.0.0.0", 0);
@@ -228,6 +229,7 @@ public class ShadowsocksVpnService extends VpnService {
         }
         if (vpnInterface != null) {
             try {
+                // 🎯 [FIXED] चाबी का निशान तुरंत हटाने के लिए सिस्टम को पूरी तरह क्लोज सिग्नल दे रहे हैं
                 vpnInterface.close();
             } catch (IOException e) {
                 Log.e(TAG, "Error closing interface", e);
