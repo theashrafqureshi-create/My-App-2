@@ -38,11 +38,9 @@
             android:theme="@style/zxing_CaptureTheme"
             android:exported="false" />
 
-        <!-- 🎯 [FIXED] यहाँ foregroundServiceType को बिल्कुल सही फॉर्मेट और स्पेसिंग के साथ फिक्स कर दिया है -->
         <service
             android:name="com.ashraf.whatsappvpn.service.ShadowsocksVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="vpn"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
