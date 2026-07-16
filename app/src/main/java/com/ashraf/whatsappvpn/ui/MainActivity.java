@@ -71,11 +71,14 @@ public class MainActivity extends AppCompatActivity {
 
         btnConnect.setOnClickListener(v -> {
             if (!isConnected) {
-                SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
-                String savedLink = sharedPref.getString("ss_link", "");
+                // 🛠️ बदलाव: अब हम क्रेडेंशियल्स चेक करने के लिए "VpnSettings" फ़ाइल का उपयोग करेंगे
+                SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
+                String serverIp = sharedPref.getString("SERVER_IP", "");
+                String password = sharedPref.getString("PASSWORD", "");
 
-                if (savedLink == null || savedLink.trim().isEmpty()) {
-                    Toast.makeText(MainActivity.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show();
+                // अगर कोर डेटा मौजूद नहीं है, तो आगे नहीं बढ़ेगा
+                if (serverIp.trim().isEmpty() || password.trim().isEmpty()) {
+                    Toast.makeText(MainActivity.this, "Please set your server configuration in Settings first!", Toast.LENGTH_LONG).show();
                     return;
                 }
 
@@ -110,11 +113,23 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startVpnService() {
-        SharedPreferences sharedPref = getSharedPreferences("VpnConfig", Context.MODE_PRIVATE);
-        String savedLink = sharedPref.getString("ss_link", "");
+        // 🛠️ बदलाव: 5 बॉक्स का सारा मैन्युअल डेटा उठाकर सीधे Intent के ज़रिए सर्विस को पास करना
+        SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
+        String serverIp = sharedPref.getString("SERVER_IP", "");
+        int serverPort = sharedPref.getInt("SERVER_PORT", 8388);
+        String password = sharedPref.getString("PASSWORD", "");
+        String method = sharedPref.getString("ENCRYPTION_METHOD", "aes-256-gcm");
+        String clientName = sharedPref.getString("CLIENT_NAME", "");
 
         Intent intent = new Intent(this, ShadowsocksVpnService.class);
-        intent.putExtra("SERVER_LINK", savedLink);
+        
+        // पुरानी 'SERVER_LINK' की जगह ये 5 वैल्यूज साफ़-साफ़ जा रही हैं
+        intent.putExtra("SERVER_IP", serverIp);
+        intent.putExtra("SERVER_PORT", serverPort);
+        intent.putExtra("PASSWORD", password);
+        intent.putExtra("ENCRYPTION_METHOD", method);
+        intent.putExtra("CLIENT_NAME", clientName);
+        
         ContextCompat.startForegroundService(this, intent);
     }
 
