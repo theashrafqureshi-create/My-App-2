@@ -46,26 +46,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread thread, Throwable throwable) {
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Looper.prepare();
-                        Toast.makeText(getApplicationContext(), 
-                            "CRASH: " + throwable.toString(), 
-                            Toast.LENGTH_LONG).show();
-                        Looper.loop();
-                    }
-                }).start();
-
-                try { Thread.sleep(4000); } catch (InterruptedException e) {}
-                android.os.Process.killProcess(android.os.Process.myPid());
-                System.exit(10);
-            }
-        });
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
@@ -82,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
         btnSettings.setOnClickListener(v -> {
             try {
                 Intent intent = new Intent();
-                // 🎯 [DYNAMIC PACKAGE FIX ADDED] - बिना किसी टाइपो एरर के सीधे सेटिंग्स एक्टिविटी खोलेगा
                 intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
                 startActivity(intent);
             } catch (Exception e) {
