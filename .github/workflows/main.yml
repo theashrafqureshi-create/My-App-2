@@ -1,9 +1,8 @@
 Name: Build WhatsApp VPN Debug APK
-# 🛑 ऑटोमैटिक पुश बिल्ड को अभी के लिए रोक दिया गया है
 on:
-#  push:
-#    branches: [ "main" ]
-  workflow_dispatch: # इसका मतलब अब बिल्ड सिर्फ तब बनेगा जब आप गिटहब पर जाकर खुद "Run workflow" बटन दबाएंगे
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
