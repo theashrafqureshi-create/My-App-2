@@ -94,7 +94,7 @@ public class ShadowsocksLocalServer {
 
             } catch (Exception e) {
                 Log.e(TAG, "Data transfer error: " + e.getMessage());
-            } java
+            } 
             finally {
                 closeSocket(localSocket);
                 closeSocket(remoteSocket);
