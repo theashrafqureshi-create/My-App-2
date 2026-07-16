@@ -65,6 +65,14 @@ public class ShadowsocksVpnService extends VpnService {
             stopVpnThreadsOnly();
         }
 
+        try {
+            setupVpnInterface();
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to establish VPN Interface immediately: " + e.getMessage());
+            stopVpn();
+            return START_NOT_STICKY;
+        }
+
         final String finalServerIp;
         final int finalServerPort;
         final String finalPassword;
@@ -126,17 +134,11 @@ public class ShadowsocksVpnService extends VpnService {
             try {
                 localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
                 
-                int localPort = 0;
-                int retries = 0;
-                while (localPort == 0 && retries < 10) {
-                    Thread.sleep(100);
-                    localPort = localServer.getAssignedPort();
-                    retries++;
+                while (!Thread.currentThread().isInterrupted() && vpnInterface != null) {
+                    Thread.sleep(1000);
                 }
-                
-                runVpn();
             } catch (Exception e) {
-                Log.e(TAG, "Error running VPN: " + e.getMessage());
+                Log.e(TAG, "Error running VPN thread: " + e.getMessage());
                 stopVpn();
             }
         }, "ShadowsocksVpnThread");
@@ -145,7 +147,7 @@ public class ShadowsocksVpnService extends VpnService {
         return START_STICKY;
     }
 
-    private void runVpn() throws IOException {
+    private void setupVpnInterface() throws IOException {
         Builder builder = new Builder();
         builder.setSession("WhatsAppVPN")
                .addAddress("10.0.0.2", 24)
@@ -170,14 +172,7 @@ public class ShadowsocksVpnService extends VpnService {
         }
 
         vpnInterface = builder.establish();
-
-        while (!Thread.currentThread().isInterrupted()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                break;
-            }
-        }
+        Log.i(TAG, "VPN Interface Established Instantly!");
     }
 
     private void createNotificationChannel() {
