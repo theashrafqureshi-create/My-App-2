@@ -13,17 +13,22 @@ public class ShadowsocksLocalServer {
     private static final String TAG = "SSLocalServer";
     private ServerSocket serverSocket;
     private boolean isRunning = false;
-    private final int localPort = 1080;
+    private int assignedPort = 0;
     private final List<Socket> activeSockets = new ArrayList<>();
 
+    public int getAssignedPort() {
+        return assignedPort;
+    }
+
     public void startServer(String remoteServerIp, int remoteServerPort, String password, String method) {
-        if (isRunning) return; // अगर सर्वर पहले से चल रहा है तो दोबारा स्टार्ट न करें
+        if (isRunning) return;
         isRunning = true;
         
         new Thread(() -> {
             try {
-                serverSocket = new ServerSocket(localPort);
-                Log.i(TAG, "Local Shadowsocks Server started on port " + localPort);
+                serverSocket = new ServerSocket(0);
+                assignedPort = serverSocket.getLocalPort();
+                Log.i(TAG, "Local Shadowsocks Server started dynamically on port " + assignedPort);
 
                 while (isRunning) {
                     try {
@@ -31,10 +36,9 @@ public class ShadowsocksLocalServer {
                         synchronized (activeSockets) {
                             activeSockets.add(localSocket);
                         }
-                        // Android 14 सेफ: पूरी तरह अलग बैकग्राउंड थ्रेड में नेटवर्क हैंडलिंग
                         new Thread(() -> handleConnection(localSocket, remoteServerIp, remoteServerPort)).start();
                     } catch (IOException e) {
-                        if (!isRunning) break; // अगर सर्वर स्टॉप हुआ है तो एरर को इग्नोर करें
+                        if (!isRunning) break;
                         Log.e(TAG, "Accept error: " + e.getMessage());
                     }
                 }
@@ -45,7 +49,6 @@ public class ShadowsocksLocalServer {
     }
 
     private void handleConnection(Socket localSocket, String remoteIp, int remotePort) {
-        // 🎯 [SAFE HOOK] इसे अलग थ्रेड में चलाना ताकि join() की तरह पूरा सिस्टम लॉक न हो
         new Thread(() -> {
             Socket remoteSocket = null;
             try {
@@ -82,20 +85,16 @@ public class ShadowsocksLocalServer {
                     } catch (IOException ignored) {}
                 }, "SSTunnel-RemoteToLocal");
 
-                // थ्रेड्स को सिर्फ स्टार्ट करना है, उनके खत्म होने का इंतज़ार करके मेन सिस्टम को ब्लॉक नहीं करना है!
                 t1.start();
                 t2.start();
 
-                // 🎯 [FIXED] यहाँ से हमने t1.join() और t2.join() को पूरी तरह हटा दिया है।
-                // अब थ्रेड्स बैकग्राउंड में आज़ाद चलेंगे और सर्विस बिना क्रैश हुए तुरंत चाबी दिखाएगी।
-                
                 while (isRunning && !localSocket.isClosed() && !finalRemoteSocket.isClosed()) {
                     Thread.sleep(1000);
                 }
 
             } catch (Exception e) {
                 Log.e(TAG, "Data transfer error: " + e.getMessage());
-            } finally {
+            } finaly {
                 closeSocket(localSocket);
                 closeSocket(remoteSocket);
             }
@@ -117,6 +116,7 @@ public class ShadowsocksLocalServer {
 
     public void stopServer() {
         isRunning = false;
+        assignedPort = 0;
         
         if (serverSocket != null) {
             try {
