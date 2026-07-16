@@ -125,6 +125,15 @@ public class ShadowsocksVpnService extends VpnService {
         vpnThread = new Thread(() -> {
             try {
                 localServer.startServer(finalServerIp, finalServerPort, finalPassword, finalMethod);
+                
+                int localPort = 0;
+                int retries = 0;
+                while (localPort == 0 && retries < 10) {
+                    Thread.sleep(100);
+                    localPort = localServer.getAssignedPort();
+                    retries++;
+                }
+                
                 runVpn();
             } catch (Exception e) {
                 Log.e(TAG, "Error running VPN: " + e.getMessage());
