@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Bundle;
@@ -13,7 +14,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -53,60 +55,65 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Button btnConnect = findViewById(R.id.btnConnect);
-        RelativeLayout greetingBanner = findViewById(R.id.greetingBanner);
-        Button btnCloseBanner = findViewById(R.id.btnCloseBanner);
+        LinearLayout greetingBanner = findViewById(R.id.greetingBanner);
+        TextView btnCloseBanner = findViewById(R.id.btnCloseBanner);
         Button btnSettings = findViewById(R.id.btnSettings);
 
-        btnCloseBanner.setOnClickListener(v -> greetingBanner.setVisibility(View.GONE));
+        if (btnCloseBanner != null && greetingBanner != null) {
+            btnCloseBanner.setOnClickListener(v -> greetingBanner.setVisibility(View.GONE));
+        }
 
-        btnSettings.setOnClickListener(v -> {
-            try {
-                Intent intent = new Intent();
-                intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
-                startActivity(intent);
-            } catch (Exception e) {
-                Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            }
-        });
+        if (btnSettings != null) {
+            btnSettings.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent();
+                    intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
 
-        btnConnect.setOnClickListener(v -> {
-            if (!isConnected) {
-                SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
-                String serverIp = sharedPref.getString("SERVER_IP", "");
-                String password = sharedPref.getString("PASSWORD", "");
+        if (btnConnect != null) {
+            btnConnect.setOnClickListener(v -> {
+                if (!isConnected) {
+                    SharedPreferences sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE);
+                    String serverIp = sharedPref.getString("SERVER_IP", "");
+                    String password = sharedPref.getString("PASSWORD", "");
 
-                // 🛠️ नया बदलाव: अगर डेटा खाली है (फर्स्ट टाइम यूजर), तो एरर दिखाने के बजाय सीधे सेटिंग्स पेज पर भेजें
-                if (serverIp.trim().isEmpty() || password.trim().isEmpty()) {
-                    Toast.makeText(MainActivity.this, "Please set your server configuration first!", Toast.LENGTH_LONG).show();
-                    
-                    try {
-                        Intent intent = new Intent();
-                        intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
-                        startActivity(intent);
-                    } catch (Exception e) {
-                        Toast.makeText(MainActivity.this, "Error opening Settings: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    if (serverIp.trim().isEmpty() || password.trim().isEmpty()) {
+                        Toast.makeText(MainActivity.this, "Please set your server configuration first!", Toast.LENGTH_LONG).show();
+                        try {
+                            Intent intent = new Intent();
+                            intent.setClassName(getPackageName(), "com.ashraf.whatsappvpn.ui.SettingsActivity");
+                            startActivity(intent);
+                        } catch (Exception e) {
+                            Toast.makeText(MainActivity.this, "Error opening Settings: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                        }
+                        return;
                     }
-                    return; // यहीं से कोड रुक जाएगा, वीपीएन स्टार्ट नहीं होगा
-                }
 
-                // अगर डेटा पहले से मौजूद है (सेकंड टाइम), तो सीधे वीपीएन कनेक्शन प्रोसेस शुरू होगा
-                Intent intent = VpnService.prepare(MainActivity.this);
-                if (intent != null) {
-                    vpnPermissionLauncher.launch(intent);
+                    Intent intent = VpnService.prepare(MainActivity.this);
+                    if (intent != null) {
+                        vpnPermissionLauncher.launch(intent);
+                    } else {
+                        handleVpnConnectionSuccess();
+                    }
                 } else {
-                    handleVpnConnectionSuccess();
+                    handleVpnDisconnection();
                 }
-            } else {
-                handleVpnDisconnection();
-            }
-        });
+            });
+        }
     }
 
     private void handleVpnConnectionSuccess() {
         startVpnService();
         Button btnConnect = findViewById(R.id.btnConnect);
-        btnConnect.setText("DISCONNECT");
-        btnConnect.setBackgroundResource(R.drawable.btn_connected_glow);
+        if (btnConnect != null) {
+            btnConnect.setText("DISCONNECT");
+            btnConnect.setBackgroundColor(Color.parseColor("#D32F2F")); // कनेक्ट होने पर बटन लाल हो जाएगा
+        }
         Toast.makeText(this, "VPN Connected Successfully!", Toast.LENGTH_SHORT).show();
         isConnected = true;
     }
@@ -114,8 +121,10 @@ public class MainActivity extends AppCompatActivity {
     private void handleVpnDisconnection() {
         stopVpnService();
         Button btnConnect = findViewById(R.id.btnConnect);
-        btnConnect.setText("CONNECT\nENGINE");
-        btnConnect.setBackgroundResource(R.drawable.btn_disconnected_glow);
+        if (btnConnect != null) {
+            btnConnect.setText("CONNECT");
+            btnConnect.setBackgroundColor(Color.parseColor("#075E54")); // डिस्कनेक्ट होने पर वापस पुराना ग्रीन कलर
+        }
         Toast.makeText(this, "VPN Disconnected", Toast.LENGTH_SHORT).show();
         isConnected = false;
     }
@@ -129,7 +138,6 @@ public class MainActivity extends AppCompatActivity {
         String clientName = sharedPref.getString("CLIENT_NAME", "");
 
         Intent intent = new Intent(this, ShadowsocksVpnService.class);
-        
         intent.putExtra("SERVER_IP", serverIp);
         intent.putExtra("SERVER_PORT", serverPort);
         intent.putExtra("PASSWORD", password);
