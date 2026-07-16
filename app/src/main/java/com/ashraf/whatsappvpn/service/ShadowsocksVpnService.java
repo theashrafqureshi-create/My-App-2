@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.pm.ServiceInfo;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
@@ -27,27 +28,13 @@ public class ShadowsocksVpnService extends VpnService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && "STOP_VPN".equals(intent.getAction())) {
-            Log.d(TAG, "Stopping VPN Service via Action");
             stopVpn();
             return START_NOT_STICKY;
         }
 
-        Log.d(TAG, "VPN Service Started Manually");
-
-        final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
-
-        if (savedLink == null || savedLink.trim().isEmpty()) {
-            new Handler(Looper.getMainLooper()).post(() -> 
-                Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
-            );
-            stopSelf();
-            return START_NOT_STICKY;
-        }
-
-        stopVpn();
         createNotificationChannel();
-        
         Notification notification;
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notification = new Notification.Builder(this, CHANNEL_ID)
                     .setContentTitle("WhatsApp VPN Connected")
@@ -62,11 +49,25 @@ public class ShadowsocksVpnService extends VpnService {
                     .setSmallIcon(android.R.drawable.ic_menu_info_details)
                     .getNotification();
         }
-        
+
         if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(1, notification, 1073741824);
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN);
         } else {
             startForeground(1, notification);
+        }
+
+        final String savedLink = intent != null ? intent.getStringExtra("SERVER_LINK") : null;
+
+        if (savedLink == null || savedLink.trim().isEmpty()) {
+            new Handler(Looper.getMainLooper()).post(() -> 
+                Toast.makeText(ShadowsocksVpnService.this, "Please copy, paste or scan a valid Shadowsocks link first!", Toast.LENGTH_LONG).show()
+            );
+            stopVpn();
+            return START_NOT_STICKY;
+        }
+
+        if (vpnThread != null || vpnInterface != null || localServer != null) {
+            stopVpnThreadsOnly();
         }
 
         final String finalServerIp;
@@ -114,7 +115,6 @@ public class ShadowsocksVpnService extends VpnService {
                 if (tempServerPort == -1) {
                     tempServerPort = 8388;
                 }
-                Log.d(TAG, "Successfully Parsed Link -> IP: " + tempServerIp + ", Port: " + tempServerPort);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error parsing Shadowsocks URL: " + e.getMessage());
@@ -133,6 +133,7 @@ public class ShadowsocksVpnService extends VpnService {
                 runVpn();
             } catch (Exception e) {
                 Log.e(TAG, "Error running VPN: " + e.getMessage());
+                stopVpn();
             }
         }, "ShadowsocksVpnThread");
 
@@ -165,7 +166,6 @@ public class ShadowsocksVpnService extends VpnService {
         }
 
         vpnInterface = builder.establish();
-        Log.i(TAG, "VPN Interface Established Successfully!");
 
         while (!Thread.currentThread().isInterrupted()) {
             try {
@@ -190,7 +190,7 @@ public class ShadowsocksVpnService extends VpnService {
         }
     }
 
-    private void stopVpn() {
+    private void stopVpnThreadsOnly() {
         if (localServer != null) {
             localServer.stopServer();
             localServer = null;
@@ -207,6 +207,10 @@ public class ShadowsocksVpnService extends VpnService {
             vpnThread.interrupt();
             vpnThread = null;
         }
+    }
+
+    private void stopVpn() {
+        stopVpnThreadsOnly();
         try {
             stopForeground(true);
             stopSelf();
