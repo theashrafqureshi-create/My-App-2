@@ -1,7 +1,5 @@
 name: Build WhatsApp VPN Debug APK
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -27,7 +25,6 @@ jobs:
         if [ -f app/build.gradle ]; then
           sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
           sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
-          # पक्का करें कि mmkv और बाकी डिपेंडेंसीज़ सही से एडिटर में एड हों
           sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")' app/build.gradle
         fi
 
