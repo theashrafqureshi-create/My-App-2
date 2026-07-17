@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0A0F1D"
+    android:padding="20dp">
+
+    <!-- सबसे ऊपर ऐप का नाम और स्टेटस -->
+    <LinearLayout
+        android:id="@+id/layout_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layout_marginTop="24dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SideToShock VPN"
+            android:textColor="#FFFFFF"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Not Protected"
+            android:textColor="#FF5252"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginTop="6dp" />
+    </LinearLayout>
+
+    <!-- बीच में बड़ा, गोल कनेक्ट बटन (Surfshark स्टाइल) -->
+    <RelativeLayout
+        android:id="@+id/layout_connect_container"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
+        android:layout_centerInParent="true"
+        android:gravity="center">
+
+        <!-- ग्लोइंग रिंग इफ़ेक्ट के लिए बैकग्राउंड -->
+        <View
+            android:id="@+id/view_glow"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:layout_centerInParent="true"
+            android:background="@android:drawable/dialog_holo_dark_frame"
+            android:backgroundTint="#FF5252" />
+
+        <Button
+            android:id="@+id/btn_connect"
+            android:layout_width="140dp"
+            android:layout_height="140dp"
+            android:layout_centerInParent="true"
+            android:text="CONNECT"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#1F293D" />
+    </RelativeLayout>
+
+    <!-- नीचे V2Ray लिंक डालने का बॉक्स और व्हाट्सएप बाईपास इंडिकेटर -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <!-- व्हाट्सएप प्रोटेक्शन इंडिकेटर -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#1F293D"
+            android:paddingHorizontal="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="WhatsApp Dedicated Tunnel"
+                android:textColor="#FFFFFF"
+                android:textSize="14sp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ACTIVE"
+                android:textColor="#00E676"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- V2Ray कॉन्फ़िगरेशन लिंक इनपुट बॉक्स -->
+        <EditText
+            android:id="@+id/et_v2ray_config"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:background="#1F293D"
+            android:hint="Paste Vless / VMess Link Here..."
+            android:textColorHint="#566275"
+            android:textColor="#FFFFFF"
+            android:paddingHorizontal="16dp"
+            android:textSize="14sp"
+            android:maxLines="1"
+            android:inputType="textUri" />
+    </LinearLayout>
+
+</RelativeLayout>
+
