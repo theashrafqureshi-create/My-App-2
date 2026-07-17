@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_match"
+    android:layout_height="match_parent"
+    android:background="#0A0F1D"
+    android:padding="24dp">
+
+    <!-- बीच में स्वागत टेक्स्ट और ग्रीटिंग्स -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Welcome"
+            android:textColor="#FFFFFF"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your Secure WhatsApp Gateway"
+            android:textColor="#8A94A6"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- नीचे अगला पेज खोलने वाला प्रीमियम बटन -->
+    <Button
+        android:id="@+id/btn_welcome_next"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#00E676"
+        android:text="Get Started"
+        android:textColor="#0A0F1D"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+</RelativeLayout>
