@@ -1,6 +1,8 @@
 name: Build WhatsApp VPN Debug APK
+
 on:
-  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
 
 jobs:
   build:
@@ -16,17 +18,7 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-
-    - name: Setup Gradle Repositories
-      run: |
-        if [ -f build.gradle ]; then
-          sed -i 's/google()/google()\n        mavenCentral()/g' build.gradle
-        fi
-        if [ -f app/build.gradle ]; then
-          sed -i 's/minifyEnabled true/minifyEnabled false/g' app/build.gradle
-          sed -i 's/shrinkResources true/shrinkResources false/g' app/build.gradle
-          sed -i '/dependencies {/a \    implementation files("libs/mmkv.aar")' app/build.gradle
-        fi
+        cache: 'gradle'
 
     - name: Grant Execute Permission for Gradle
       run: chmod +x gradlew
@@ -37,5 +29,5 @@ jobs:
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: my-app-apk
+        name: whatsapp-vpn-dummy-build
         path: app/build/outputs/apk/debug/app-debug.apk
