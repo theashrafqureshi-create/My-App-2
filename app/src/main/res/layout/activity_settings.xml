@@ -1,6 +1,3 @@
-id:textSize="16sp" />
-
-</LinearLayout>
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -139,7 +136,7 @@ id:textSize="16sp" />
                 android:layout_marginBottom="16dp"
                 android:importantForAutofill="no" />
 
-            <!-- 🔒 4. पासवर्ड (Password) - जो कोटलिन कोड को चाहिए -->
+            <!-- 🔒 4. पासवर्ड (Password) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -174,8 +171,7 @@ id:textSize="16sp" />
                 android:layout_width="match_parent"
                 android:layout_height="48dp"
                 android:background="#FFFFFF"
-                android:layout_marginBottom="24dp"
-                android:entries="@array/encryption_methods_array" />
+                android:layout_marginBottom="24dp" />
 
         </LinearLayout>
     </ScrollView>
