@@ -1,3 +1,6 @@
+id:textSize="16sp" />
+
+</LinearLayout>
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -6,7 +9,7 @@
     android:background="#F0F4F8"
     android:padding="20dp">
 
-    <!-- बैक बटन और टाइटल (Nord/Surfshark स्टाइल) -->
+    <!-- बैक बटन और टाइटल -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -47,7 +50,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- 🔒 प्रीमियम फीचर: व्हाट्सऐप टनलिंग स्टेटस कार्ड -->
+            <!-- व्हाट्सऐप टनलिंग स्टेटस कार्ड -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -133,13 +136,51 @@
                 android:padding="12dp"
                 android:background="#FFFFFF"
                 android:textColor="#333333"
-                android:layout_marginBottom="24dp"
+                android:layout_marginBottom="16dp"
                 android:importantForAutofill="no" />
+
+            <!-- 🔒 4. पासवर्ड (Password) - जो कोटलिन कोड को चाहिए -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Password"
+                android:textColor="#627D98"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/etPassword"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Enter VPN Password"
+                android:inputType="textPassword"
+                android:padding="12dp"
+                android:background="#FFFFFF"
+                android:textColor="#333333"
+                android:layout_marginBottom="16dp"
+                android:importantForAutofill="no" />
+
+            <!-- 🔒 5. एन्क्रिप्शन मेथड (Encryption Method Spinner) -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Encryption Method"
+                android:textColor="#627D98"
+                android:textSize="14sp"
+                android:layout_marginBottom="6dp" />
+
+            <Spinner
+                android:id="@+id/spEncryptionMethod"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="#FFFFFF"
+                android:layout_marginBottom="24dp"
+                android:entries="@array/encryption_methods_array" />
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- सेव बटन (Surfshark / Nord स्टाइल इलेक्ट्रिक ब्लू) -->
+    <!-- सेव बटन -->
     <Button
         android:id="@+id/btnSaveLink"
         android:layout_width="match_parent"
