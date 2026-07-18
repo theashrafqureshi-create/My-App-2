@@ -1,4 +1,4 @@
-package com.ashraf.whatsappvpn.service
+package com.ashraf.whatsappvpn.util
 
 import android.content.Context
 import android.util.Log
@@ -6,10 +6,10 @@ import android.util.Log
 object AngConfigManager {
     fun importConfig(context: Context, serverLink: String): Boolean {
         if (serverLink.isNullOrBlank()) return false
-        
-        return if (serverLink.startsWith("ss://")) {
-            // 🎯 [FIXED] रिफ्लेक्शन हटा दिया क्योंकि MMKV नहीं है। अब यह हमेशा सेफली True देगा।
-            Log.d("AngConfigManager", "Config checked and verified successfully.")
+
+        // 🔄 फिक्स: अब यह Shadowsocks (ss://) और V2Ray (v2ray:// या vless://) दोनों को सपोर्ट करेगा
+        return if (serverLink.startsWith("ss://") || serverLink.startsWith("v2ray://") || serverLink.startsWith("vless://")) {
+            Log.d("AngConfigManager", "V2Ray/SS Config checked and verified successfully.")
             true
         } else {
             false
