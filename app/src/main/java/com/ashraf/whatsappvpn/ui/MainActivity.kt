@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. क्रैश ट्रैकर (जैसा आपकी पुरानी फाइल में था)
+        // 1. क्रैश ट्रैकर
         Thread.setDefaultUncaughtExceptionHandler { _, throwable ->
             val sw = StringWriter()
             val pw = PrintWriter(sw)
@@ -79,18 +79,17 @@ class MainActivity : AppCompatActivity() {
         // बैनर बंद करने का लॉजिक
         btnCloseBanner?.setOnClickListener { greetingBanner?.visibility = View.GONE }
 
-        // सेटिंग्स बटन का लॉजिक
+        // 🚀 फिक्स: सेटिंग्स बटन का लॉजिक (अब शुद्ध कोटलीन क्लास रेफरेंस के साथ)
         btnSettings?.setOnClickListener {
             try {
-                val intent = Intent()
-                intent.setClassName(packageName, "com.ashraf.whatsappvpn.ui.SettingsActivity")
+                val intent = Intent(this, SettingsActivity::class.java)
                 startActivity(intent)
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
 
-        // कनेक्ट बटन का लॉजिक (अब यह V2Ray की तरफ इशारा करेगा)
+        // कनेक्ट बटन का लॉजिक (V2Ray की तरफ इशारा करेगा)
         btnConnect?.setOnClickListener {
             if (!isConnected) {
                 val sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE)
@@ -100,8 +99,8 @@ class MainActivity : AppCompatActivity() {
                 if (configLink.isNullOrBlank()) {
                     Toast.makeText(this@MainActivity, "Please set your V2Ray configuration first!", Toast.LENGTH_LONG).show()
                     try {
-                        val intent = Intent()
-                        intent.setClassName(packageName, "com.ashraf.whatsappvpn.ui.SettingsActivity")
+                        // 🚀 फिक्स: यहाँ भी क्लास रेफरेंस से रूट किया ताकि कंपाइलर एरर न दे
+                        val intent = Intent(this, SettingsActivity::class.java)
                         startActivity(intent)
                     } catch (e: Exception) {
                         Toast.makeText(this@MainActivity, "Error opening Settings: ${e.message}", Toast.LENGTH_LONG).show()
