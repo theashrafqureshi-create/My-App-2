@@ -4,16 +4,19 @@ buildscript {
         mavenCentral()
     }
     dependencies {
+        // 🚀 फिक्स #1: ग्रैडल टूल्स वर्शन को नीचे वाले प्लगइन वर्शन (8.4.0) से पूरी तरह सिंक कर दिया
         classpath 'com.android.tools.build:gradle:8.4.0'
         classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22'
     }
 }
 
 plugins {
-    id 'com.android.application' version '8.2.0' apply false
-    id 'com.android.library' version '8.2.0' apply false
+    // 🚀 फिक्स #2: अब यहाँ सब कुछ लेटेस्ट और मैचिंग वर्शन 8.4.0 पर सेट है
+    id 'com.android.application' version '8.4.0' apply false
+    id 'com.android.library' version '8.4.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
 }
 
 task clean(type: Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }
