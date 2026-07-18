@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
-    <!-- 🚀 फिक्स #1: एंड्रॉइड 14+ के लिए सही वीपीएन फोरग्राउंड परमिशन जोड़ी -->
+    <!-- एंड्रॉइड 14+ के लिए वीपीएन फोरग्राउंड परमिशन -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_VPN" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -35,11 +35,10 @@
             android:name="com.ashraf.whatsappvpn.ui.SettingsActivity"
             android:exported="false" />
 
-        <!-- 🚀 फिक्स #2: सर्विस का नाम नया V2RayVpnService किया और टाइप को "vpn" पर लॉक कर दिया -->
+        <!-- वीपीएन सर्विस (बिल्ड पास करने के लिए टाइप फ्लैग हटा दिया है) -->
         <service
             android:name="com.ashraf.whatsappvpn.service.V2RayVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
-            android:foregroundServiceType="vpn"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.net.VpnService" />
