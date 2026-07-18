@@ -1,16 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ऐप का नाम जो स्क्रीन पर दिखेगा -->
+    <!-- ऐप का नाम जो स्क्रीन और मोबाइल लॉन्चर पर दिखेगा -->
     <string name="app_name">WhatsApp VPN</string>
     
-    <!-- पॉप-अप का टेक्स्ट -->
-    <string name="welcome_message">Welcome to this app and Thank you for using this app</string>
-
-    <!-- 🎯 ये रही हमारी नई ड्रॉपडाउन लिस्ट जो हमने यहाँ जोड़ दी है -->
-    <string-array name="encryption_methods_array">
-        <item>aes-256-gcm</item>
-        <item>aes-192-gcm</item>
-        <item>aes-128-gcm</item>
-        <item>chacha20-ietf-poly1305</item>
-    </string-array>
+    <!-- प्रीमियम ग्रीटिंग बैनर टेक्स्ट -->
+    <string name="welcome_message">Welcome to WhatsApp VPN. Securely tunnel your traffic with premium protocols.</string>
 </resources>
