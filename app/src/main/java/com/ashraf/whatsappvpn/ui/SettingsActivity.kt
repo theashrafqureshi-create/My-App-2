@@ -96,7 +96,8 @@ class SettingsActivity : AppCompatActivity() {
             
             editor.apply()
 
-            Toast.makeText(this@MainActivity, "VPN Configuration Saved Successfully! ✅", Toast.LENGTH_SHORT).show()
+            // 🚀 फिक्स: यहाँ this@MainActivity को बदलकर this@SettingsActivity किया
+            Toast.makeText(this@SettingsActivity, "VPN Configuration Saved Successfully! ✅", Toast.LENGTH_SHORT).show()
             finish() // सेव होने के बाद ऑटोमैटिकली होम स्क्रीन पर वापस भेज देगा
         }
     }
