@@ -2,10 +2,8 @@ package com.ashraf.whatsappvpn.ui
 
 import android.content.Context
 import android.os.Bundle
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -19,59 +17,34 @@ class SettingsActivity : AppCompatActivity() {
 
         val btnBack = findViewById<TextView>(R.id.btnBack)
         
-        // 🛠️ 5 मैनुअल इनपुट बॉक्स और ड्रॉपडाउन (Spinner) के लिए विजेट्स
+        // 🚀 सिर्फ V2Ray के लिए जरूरी विजेट्स जो आपकी XML में मौजूद हैं
         val etClientName = findViewById<EditText>(R.id.etClientName)
         val etServerIp = findViewById<EditText>(R.id.etServerIp)
         val etServerPort = findViewById<EditText>(R.id.etServerPort)
-        val etPassword = findViewById<EditText>(R.id.etPassword)
-        val spEncryptionMethod = findViewById<Spinner>(R.id.spEncryptionMethod)
         
         val btnSaveLink = findViewById<Button>(R.id.btnSaveLink) // आपका सेव बटन
 
-        // 🛠️ मेमोरी से पुराना सेव किया हुआ डेटा लोड करना
+        // 💾 मेमोरी से पुराना सेव किया हुआ V2Ray डेटा लोड करना
         val sharedPref = getSharedPreferences("VpnSettings", Context.MODE_PRIVATE)
         
-        etClientName.setText(sharedPref.getString("CLIENT_NAME", ""))
-        etServerIp.setText(sharedPref.getString("SERVER_IP", ""))
+        etClientName?.setText(sharedPref.getString("CLIENT_NAME", ""))
+        etServerIp?.setText(sharedPref.getString("SERVER_IP", ""))
         
-        val savedPort = sharedPref.getInt("SERVER_PORT", 8388)
-        etServerPort.setText(savedPort.toString())
-        
-        etPassword.setText(sharedPref.getString("PASSWORD", ""))
-
-        // 🛠️ ड्रॉपडाउन (Spinner) में पुराना सेव एन्क्रिप्शन मेथड सेट करना
-        val savedMethod = sharedPref.getString("ENCRYPTION_METHOD", "aes-256-gcm")
-        if (spEncryptionMethod?.adapter != null) {
-            try {
-                @Suppress("UNCHECKED_CAST")
-                val adapter = spEncryptionMethod.adapter as ArrayAdapter<CharSequence>
-                val spinnerPosition = adapter.getPosition(savedMethod)
-                if (spinnerPosition >= 0) {
-                    spEncryptionMethod.setSelection(spinnerPosition)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
+        val savedPort = sharedPref.getInt("SERVER_PORT", 443) // Default V2Ray पोर्ट 443 कर दिया
+        etServerPort?.setText(savedPort.toString())
 
         // बैक बटन का लॉजिक
         btnBack?.setOnClickListener { finish() }
 
-        // 🛠️ सेव बटन दबाने पर सभी वैल्यूज को SharedPreferences में स्टोर करना
+        // 🛠️ सेव बटन दबाने पर V2Ray कॉन्फ़िगरेशन को SharedPreferences में स्टोर करना
         btnSaveLink?.setOnClickListener {
-            val clientName = etClientName.text.toString().trim()
-            val serverIp = etServerIp.text.toString().trim()
-            val portStr = etServerPort.text.toString().trim()
-            val password = etPassword.text.toString().trim()
-            
-            var method = "aes-256-gcm"
-            if (spEncryptionMethod?.selectedItem != null) {
-                method = spEncryptionMethod.selectedItem.toString()
-            }
+            val clientName = etClientName?.text?.toString()?.trim() ?: ""
+            val serverIp = etServerIp?.text?.toString()?.trim() ?: ""
+            val portStr = etServerPort?.text?.toString()?.trim() ?: ""
 
             // वैलिडेशन: चेक करें कि कोई मुख्य बॉक्स खाली तो नहीं है
-            if (serverIp.isEmpty() || portStr.isEmpty() || password.isEmpty()) {
-                Toast.makeText(this@SettingsActivity, "Error: IP, Port, and Password are required!", Toast.LENGTH_SHORT).show()
+            if (serverIp.isEmpty() || portStr.isEmpty()) {
+                Toast.makeText(this@SettingsActivity, "Error: IP and Port are required!", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -88,16 +61,13 @@ class SettingsActivity : AppCompatActivity() {
             editor.putString("CLIENT_NAME", clientName)
             editor.putString("SERVER_IP", serverIp)
             editor.putInt("SERVER_PORT", port)
-            editor.putString("PASSWORD", password)
-            editor.putString("ENCRYPTION_METHOD", method)
             
-            // 🔄 V2Ray कंपैटिबिलिटी के लिए एक डमी लिंक भी बैकअप में जनरेट करके रख देते हैं
+            // 🔄 शुद्ध V2Ray कॉन्फ़िगरेशन लिंक जो MainActivity और V2RayVpnService को चाहिए
             editor.putString("V2RAY_CONFIG_LINK", "v2ray://$serverIp:$port")
             
             editor.apply()
 
-            // 🚀 फिक्स: यहाँ this@MainActivity को बदलकर this@SettingsActivity किया
-            Toast.makeText(this@SettingsActivity, "VPN Configuration Saved Successfully! ✅", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@SettingsActivity, "V2Ray Configuration Saved Successfully! ✅", Toast.LENGTH_SHORT).show()
             finish() // सेव होने के बाद ऑटोमैटिकली होम स्क्रीन पर वापस भेज देगा
         }
     }
