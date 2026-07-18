@@ -2,10 +2,10 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="#F0F4F8"
     android:padding="24dp">
 
-    <!-- टॉप हेडर और सेटिंग्स बटन -->
+    <!-- टॉप हेडर और सेटिंग्स बटन (Nord/Surfshark स्टाइल) -->
     <RelativeLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
@@ -18,7 +18,7 @@
             android:layout_alignParentStart="true"
             android:layout_centerVertical="true"
             android:text="WhatsApp VPN"
-            android:textColor="#075E54"
+            android:textColor="#0A192F"
             android:textSize="24sp"
             android:textStyle="bold" />
 
@@ -28,19 +28,19 @@
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:backgroundTint="#075E54"
+            android:backgroundTint="#0066FE"
             android:text="Settings"
             android:textColor="#FFFFFF" />
     </RelativeLayout>
 
-    <!-- वेलकम / ग्रीटिंग बैनर -->
+    <!-- वेलकम / ग्रीटिंग बैनर (Premium Blue Accent) -->
     <LinearLayout
         android:id="@+id/greetingBanner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_below="@id/headerLayout"
         android:layout_marginTop="24dp"
-        android:background="#E3F2FD"
+        android:background="#E1EFFE"
         android:orientation="horizontal"
         android:padding="16dp"
         android:visibility="visible">
@@ -49,8 +49,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Welcome to WhatsApp VPN. Please configure your settings to connect."
-            android:textColor="#0D47A1"
+            android:text="Welcome to WhatsApp VPN. Paste your V2Ray config below to start."
+            android:textColor="#0055CC"
             android:textSize="14sp" />
 
         <TextView
@@ -59,21 +59,72 @@
             android:layout_height="wrap_content"
             android:padding="4dp"
             android:text="✕"
-            android:textColor="#0D47A1"
+            android:textColor="#0055CC"
             android:textSize="16sp"
             android:textStyle="bold"
             android:clickable="true"
             android:focusable="true"/>
     </LinearLayout>
 
-    <!-- कनेक्ट / डिसकनेक्ट मेन बटन -->
+    <!-- वीपीएन लिंक पेस्ट करने के लिए इनपुट बॉक्स -->
+    <LinearLayout
+        android:id="@+id/configInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/greetingBanner"
+        android:layout_marginTop="20dp"
+        android:orientation="vertical">
+
+        <EditText
+            android:id="@+id/etVpnConfig"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:background="#FFFFFF"
+            android:hint="Paste vmess:// or vless:// link here..."
+            android:padding="12dp"
+            android:textSize="14sp"
+            android:textColor="#333333"
+            android:importantForAutofill="no"
+            android:inputType="textLongMessage"/>
+    </LinearLayout>
+
+    <!-- लाइव पिंग और स्टेटस बोर्ड -->
+    <LinearLayout
+        android:id="@+id/statusLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/configInputLayout"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/tvVpnStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status: Disconnected"
+            android:textColor="#627D98"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvPingRate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:text="⚡ Ping: -- ms"
+            android:textColor="#0066FE"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- कनेक्ट / डिसकनेक्ट मेन गोल बटन (Surfshark/Nord की तरह प्रीमियम ग्लोइंग वाइब) -->
     <Button
         android:id="@+id/btnConnect"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
+        android:layout_width="180dp"
+        android:layout_height="180dp"
         android:layout_centerInParent="true"
-        android:background="@android:color/transparent"
-        android:backgroundTint="#075E54"
+        android:backgroundTint="#0A192F"
         android:text="CONNECT"
         android:textColor="#FFFFFF"
         android:textSize="18sp"
