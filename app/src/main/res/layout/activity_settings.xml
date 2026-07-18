@@ -3,10 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F7FA"
+    android:background="#F0F4F8"
     android:padding="20dp">
 
-    <!-- बैक बटन और टाइटल -->
+    <!-- बैक बटन और टाइटल (Nord/Surfshark स्टाइल) -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -17,7 +17,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="← Back"
-            android:textColor="#075E54"
+            android:textColor="#0A192F"
             android:textSize="18sp"
             android:textStyle="bold"
             android:padding="8dp"
@@ -30,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="VPN Settings"
-            android:textColor="#333333"
+            android:textColor="#0A192F"
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_centerInParent="true" />
@@ -47,12 +47,38 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- 🔒 प्रीमियम फीचर: व्हाट्सऐप टनलिंग स्टेटस कार्ड -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#E1EFFE"
+                android:padding="16dp"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎯 Target Traffic"
+                    android:textColor="#0055CC"
+                    android:textStyle="bold"
+                    android:textSize="16sp"
+                    android:layout_marginBottom="4dp"/>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Per-App Routing is locked to WhatsApp and WhatsApp Business. All other apps bypass the VPN safely."
+                    android:textColor="#0055CC"
+                    android:textSize="13sp"/>
+            </LinearLayout>
+
             <!-- 1. यूजर का नाम (Client Name) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Client / User Name"
-                android:textColor="#7F8C8D"
+                android:text="Profile / Client Name"
+                android:textColor="#627D98"
                 android:textSize="14sp"
                 android:layout_marginBottom="6dp" />
 
@@ -60,18 +86,20 @@
                 android:id="@+id/etClientName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g. User 1"
+                android:hint="e.g. Premium Node 1"
                 android:inputType="textPersonName"
                 android:padding="12dp"
                 android:background="#FFFFFF"
-                android:layout_marginBottom="16dp" />
+                android:textColor="#333333"
+                android:layout_marginBottom="16dp"
+                android:importantForAutofill="no" />
 
             <!-- 2. सर्वर का पता (Server IP) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Server IP / Domain"
-                android:textColor="#7F8C8D"
+                android:textColor="#627D98"
                 android:textSize="14sp"
                 android:layout_marginBottom="6dp" />
 
@@ -79,18 +107,20 @@
                 android:id="@+id/etServerIp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g. 139.59.84.133"
+                android:hint="e.g. v2ray.server.com"
                 android:inputType="text"
                 android:padding="12dp"
                 android:background="#FFFFFF"
-                android:layout_marginBottom="16dp" />
+                android:textColor="#333333"
+                android:layout_marginBottom="16dp"
+                android:importantForAutofill="no" />
 
             <!-- 3. पोर्ट नंबर (Server Port) -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Server Port"
-                android:textColor="#7F8C8D"
+                android:textColor="#627D98"
                 android:textSize="14sp"
                 android:layout_marginBottom="6dp" />
 
@@ -98,58 +128,26 @@
                 android:id="@+id/etServerPort"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="e.g. 105"
+                android:hint="e.g. 443"
                 android:inputType="number"
                 android:padding="12dp"
                 android:background="#FFFFFF"
-                android:layout_marginBottom="16dp" />
-
-            <!-- 4. पासवर्ड (Password) -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Password"
-                android:textColor="#7F8C8D"
-                android:textSize="14sp"
-                android:layout_marginBottom="6dp" />
-
-            <EditText
-                android:id="@+id/etPassword"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Enter Server Password"
-                android:inputType="textPassword"
-                android:padding="12dp"
-                android:background="#FFFFFF"
-                android:layout_marginBottom="16dp" />
-
-            <!-- 5. एन्क्रिप्शन मेथड (Encryption Method DROP DOWN) -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Encryption Method"
-                android:textColor="#7F8C8D"
-                android:textSize="14sp"
-                android:layout_marginBottom="6dp" />
-
-            <Spinner
-                android:id="@+id/spEncryptionMethod"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:background="#FFFFFF"
+                android:textColor="#333333"
                 android:layout_marginBottom="24dp"
-                android:entries="@array/encryption_methods_array" />
+                android:importantForAutofill="no" />
 
         </LinearLayout>
     </ScrollView>
 
-    <!-- सेव बटन -->
+    <!-- सेव बटन (Surfshark / Nord स्टाइल इलेक्ट्रिक ब्लू) -->
     <Button
         android:id="@+id/btnSaveLink"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="55dp"
         android:text="SAVE CONFIGURATION"
-        android:backgroundTint="#075E54"
-        android:textColor="#FFFFFF" />
+        android:backgroundTint="#0066FE"
+        android:textColor="#FFFFFF"
+        android:textStyle="bold"
+        android:textSize="16sp" />
 
 </LinearLayout>
