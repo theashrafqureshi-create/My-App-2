@@ -1,5 +1,7 @@
 plugins {
     id 'com.android.application'
+    // 🚀 फिक्स #1: कोटलीन सपोर्ट चालू करने के लिए जादुई प्लगइन जोड़ा
+    id 'org.jetbrains.kotlin.android'
 }
 
 android {
@@ -30,17 +32,25 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+
+    // 🚀 फिक्स #2: कोटलीन फाइलों को जावा 17 के साथ सिंक करने के लिए सेटिंग्स जोड़ी
+    kotlinOptions {
+        jvmTarget = '17'
+    }
 }
 
 dependencies {
-    // [FIXED] एंड्रॉइड 14+ के फोरग्राउंड सर्विस वीपीएन टाइप को बैकग्राउंड में दिखाने के लिए यह और लाइब्रेरी जरूरी है
+    // 🛡️ आपकी मेहनत: एंड्रॉइड 14+ फोरग्राउंड सर्विस और वर्क मैनेजर सपोर्ट (सुरक्षित है)
     implementation 'androidx.work:work-runtime:2.9.0'
 
+    // 🚀 फिक्स #3: मॉडर्न कोटलीन कोर लाइब्रेरीज़ को शामिल किया
     implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.22'
+    
+    // UI और लेआउट लाइब्रेरीज़
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    // Shadowsocks VPN Local libs
-    implementation fileTree(dir: 'libs', include: ['*.aar'])
+    // 🧹 फिक्स #4: पुराने शैडोशॉक्स की .aar वाली फालतू लाइन को पूरी तरह साफ कर दिया!
 }
